@@ -886,12 +886,23 @@ For this system design project, I've implemented approximately 25% of the platfo
 1. **Identity Service**: User authentication with JWT tokens and role-based access control
 2. **Equipment Service**: Equipment registry with search functionality
 3. **Reservation Service**: Booking system with approval workflows
-4. **API Gateway**: Service routing and composition
-5. **Web Frontend**: Basic interfaces for equipment discovery and reservation
+4. **Notification Service**: Event-driven notifications using Kafka for message delivery
+5. **API Gateway**: Service routing and composition
+6. **Web Frontend**: Basic interfaces for equipment discovery and reservation
 
-The implementation demonstrates the microservices architecture and the core workflows of equipment discovery, reservation, and approval.
+The implementation demonstrates the microservices architecture with an event-driven approach using Kafka for asynchronous communication. The core workflows of equipment discovery, reservation, and approval are fully functional with real-time notifications.
 
-### 7.1 Reservation Service Implementation Detail
+### 7.1 Event-Driven Implementation
+
+The system uses Kafka as a message broker to enable asynchronous, loosely-coupled communication between services:
+
+- **Reservation Service** acts as a producer, publishing events like `reservation.created`, `reservation.approved`, and `reservation.rejected` to Kafka topics
+- **Notification Service** acts as a consumer, subscribing to these events and sending appropriate notifications to users
+- **Kafka UI** provides monitoring and management capabilities for Kafka topics and messages
+
+This event-driven architecture enables better scalability and reliability by decoupling service-to-service communication and allowing for eventual consistency where appropriate.
+
+### 7.2 Reservation Service Implementation Detail
 
 The Reservation Service is a key component that demonstrates the system's core functionality. It includes:
 
@@ -902,7 +913,7 @@ The Reservation Service is a key component that demonstrates the system's core f
 
 The service implements important business rules like preventing overlapping reservations and enforcing approval workflows. It uses database transactions to ensure data consistency across related entities.
 
-### 7.2 Sequence Diagrams for Key Processes
+### 7.3 Sequence Diagrams for Key Processes
 
 The reservation and approval process follows this sequence:
 
