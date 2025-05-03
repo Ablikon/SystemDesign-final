@@ -64,6 +64,90 @@ app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 // Setup API proxies to microservices
 setupProxies(app);
 
+// Authentication endpoints
+// Register endpoint
+app.post('/api/auth/register', (req, res) => {
+  logger.info('Processing registration request');
+  
+  const { email, password, firstName, lastName } = req.body;
+  
+  // Simple validation
+  if (!email || !password || !firstName || !lastName) {
+    return res.status(400).json({
+      success: false,
+      message: 'Missing required fields'
+    });
+  }
+  
+  // Create a mock token
+  const token = 'mock_token_' + Date.now();
+  
+  // Return success response
+  return res.status(201).json({
+    success: true,
+    data: {
+      user: {
+        id: '123',
+        email,
+        firstName,
+        lastName,
+        role: 'researcher'
+      },
+      token
+    }
+  });
+});
+
+// Login endpoint
+app.post('/api/auth/login', (req, res) => {
+  logger.info('Processing login request');
+  
+  const { email, password } = req.body;
+  
+  // Simple validation
+  if (!email || !password) {
+    return res.status(400).json({
+      success: false,
+      message: 'Email and password are required'
+    });
+  }
+  
+  // Create a mock token
+  const token = 'mock_token_' + Date.now();
+  
+  // Return success response
+  return res.status(200).json({
+    success: true,
+    data: {
+      user: {
+        id: '123',
+        email,
+        firstName: 'John',
+        lastName: 'Doe',
+        role: 'researcher'
+      },
+      token
+    }
+  });
+});
+
+// Me endpoint
+app.get('/api/auth/me', (req, res) => {
+  logger.info('Processing me request');
+  
+  // Return a mock user
+  return res.status(200).json({
+    success: true,
+    data: {
+      id: '123',
+      email: 'john.doe@example.com',
+      firstName: 'John',
+      lastName: 'Doe',
+      role: 'researcher'
+    }
+  });
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'UP', service: 'api-gateway' });

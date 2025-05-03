@@ -1,45 +1,48 @@
 const logger = require('../utils/logger');
 
-// Custom error class for API errors
+/**
+ * Custom API Error class for meaningful error responses
+ */
 class ApiError extends Error {
-  constructor(statusCode, message, isOperational = true) {
+  constructor(statusCode, message) {
     super(message);
     this.statusCode = statusCode;
-    this.isOperational = isOperational;
+    this.name = this.constructor.name;
     Error.captureStackTrace(this, this.constructor);
   }
 }
 
-// Middleware to handle errors
+/**
+ * Handle 404 errors for routes that don't exist
+ */
+const notFound = (req, res, next) => {
+  const error = new ApiError(404, `Route not found - ${req.originalUrl}`);
+  next(error);
+};
+
+/**
+ * Global error handler middleware
+ */
 const errorHandler = (err, req, res, next) => {
-  // Log the error
-  logger.error(`${err.message}`, { 
-    stack: err.stack,
-    path: req.path,
-    method: req.method,
-    ip: req.ip
-  });
-
-  // Default error status code and message
-  let statusCode = err.statusCode || 500;
-  let message = err.message || 'Internal Server Error';
-
-  // Handle Sequelize-specific errors
-  if (err.name === 'SequelizeValidationError' || err.name === 'SequelizeUniqueConstraintError') {
-    statusCode = 400;
-    message = err.errors.map(e => e.message).join(', ');
+  // Default to 500 if no status code is set
+  const statusCode = err.statusCode || 500;
+  
+  // Log the error for server debugging
+  console.error(`[ERROR] ${err.name}: ${err.message}`);
+  if (statusCode === 500) {
+    console.error(err.stack);
   }
-
+  
   // Send error response
   res.status(statusCode).json({
     success: false,
-    message,
-    // Only include stack trace in development
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+    message: err.message,
+    stack: process.env.NODE_ENV === 'production' ? null : err.stack
   });
 };
 
 module.exports = {
   ApiError,
+  notFound,
   errorHandler
 }; 

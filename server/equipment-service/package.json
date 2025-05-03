@@ -9,18 +9,20 @@
     "test": "jest"
   },
   "dependencies": {
+    "axios": "^0.26.1",
     "cors": "^2.8.5",
     "dotenv": "^16.0.0",
     "express": "^4.17.3",
     "express-validator": "^6.14.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^7.2.0",
     "pg": "^8.7.3",
     "sequelize": "^6.17.0",
-    "winston": "^3.6.0",
-    "axios": "^0.26.1"
+    "winston": "^3.6.0"
   },
   "devDependencies": {
     "jest": "^27.5.1",
     "nodemon": "^2.0.15",
     "supertest": "^6.2.2"
   }
-} 
+}

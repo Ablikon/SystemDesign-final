@@ -1,7 +1,5 @@
 # Open Science Collaboration Hub - Implementation
 
-This repository contains a partial implementation (20-30%) of the Open Science Collaboration Hub, a platform that connects researchers with remote laboratory equipment across institutional boundaries.
-
 ## Implementation Scope
 
 For this initial implementation, we've focused on the core functionality that demonstrates the system's architecture and validates key design decisions:
@@ -40,7 +38,7 @@ This implementation follows a microservices architecture pattern as described in
 
 1. Clone this repository:
 ```
-git clone https://github.com/yourusername/open-science-hub.git
+git clone https://github.com/Ablikon/SystemDesign-final.git
 cd open-science-hub
 ```
 

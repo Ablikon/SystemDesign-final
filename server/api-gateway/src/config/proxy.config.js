@@ -10,7 +10,6 @@ const RESERVATION_SERVICE_URL = process.env.RESERVATION_SERVICE_URL || 'http://l
 const proxyOptions = {
   changeOrigin: true,
   pathRewrite: {
-    '^/api/auth': '/api/auth',
     '^/api/users': '/api/users',
     '^/api/equipment': '/api/equipment',
     '^/api/categories': '/api/categories',
@@ -32,7 +31,7 @@ const proxyOptions = {
 // Proxy routes configuration
 const proxyRoutes = [
   {
-    context: ['/api/auth', '/api/users'],
+    context: ['/api/users'],
     target: IDENTITY_SERVICE_URL,
     ...proxyOptions
   },

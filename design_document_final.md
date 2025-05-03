@@ -110,9 +110,6 @@ Non-functional requirements define the overall qualities and performance charact
 
 The Open Science Collaboration Hub employs a microservices architecture to enable flexibility, scalability, and resilience. Each component handles specific aspects of the platform, communicating through well-defined APIs.
 
-### 3.1 C4 Model Architecture Diagrams
-
-We use the C4 model to visualize our software architecture at different levels of abstraction.
 
 #### 3.1.1 C1: System Context Diagram
 
