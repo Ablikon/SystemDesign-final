@@ -1,0 +1,119 @@
+version: '3.8'
+
+services:
+  # Frontend
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    depends_on:
+      - api-gateway
+    environment:
+      - NODE_ENV=development
+      - REACT_APP_API_URL=http://localhost:8080
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: ./server/api-gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./server/api-gateway:/app
+      - /app/node_modules
+    depends_on:
+      - identity-service
+      - equipment-service
+      - reservation-service
+    environment:
+      - NODE_ENV=development
+      - PORT=8080
+      - IDENTITY_SERVICE_URL=http://identity-service:3001
+      - EQUIPMENT_SERVICE_URL=http://equipment-service:3002
+      - RESERVATION_SERVICE_URL=http://reservation-service:3003
+      - REDIS_URL=redis://redis:6379
+
+  # Identity Service
+  identity-service:
+    build:
+      context: ./server/identity-service
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./server/identity-service:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/identity_db
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your_jwt_secret_key_here
+
+  # Equipment Service
+  equipment-service:
+    build:
+      context: ./server/equipment-service
+      dockerfile: Dockerfile
+    ports:
+      - "3002:3002"
+    volumes:
+      - ./server/equipment-service:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+    environment:
+      - NODE_ENV=development
+      - PORT=3002
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/equipment_db
+
+  # Reservation Service
+  reservation-service:
+    build:
+      context: ./server/reservation-service
+      dockerfile: Dockerfile
+    ports:
+      - "3003:3003"
+    volumes:
+      - ./server/reservation-service:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+    environment:
+      - NODE_ENV=development
+      - PORT=3003
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/reservation_db
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:14-alpine
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-db:/docker-entrypoint-initdb.d
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_MULTIPLE_DATABASES=identity_db,equipment_db,reservation_db
+
+  # Redis for caching and session management
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  postgres_data:
+  redis_data: 

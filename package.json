@@ -1,0 +1,37 @@
+{
+  "name": "open-science-collaboration-hub",
+  "version": "0.1.0",
+  "description": "A platform connecting researchers with remote laboratory equipment",
+  "main": "index.js",
+  "scripts": {
+    "start": "docker-compose up",
+    "start:dev": "docker-compose up -d",
+    "stop": "docker-compose down",
+    "install:all": "npm run install:client && npm run install:api-gateway && npm run install:identity && npm run install:equipment && npm run install:reservation",
+    "install:client": "cd client && npm install",
+    "install:api-gateway": "cd server/api-gateway && npm install",
+    "install:identity": "cd server/identity-service && npm install",
+    "install:equipment": "cd server/equipment-service && npm install",
+    "install:reservation": "cd server/reservation-service && npm install",
+    "test": "npm run test:client && npm run test:services",
+    "test:client": "cd client && npm test",
+    "test:services": "npm run test:api-gateway && npm run test:identity && npm run test:equipment && npm run test:reservation",
+    "test:api-gateway": "cd server/api-gateway && npm test",
+    "test:identity": "cd server/identity-service && npm test",
+    "test:equipment": "cd server/equipment-service && npm test",
+    "test:reservation": "cd server/reservation-service && npm test"
+  },
+  "keywords": [
+    "research",
+    "laboratory",
+    "equipment",
+    "remote",
+    "collaboration",
+    "science"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0"
+  }
+} 
