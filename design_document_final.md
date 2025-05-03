@@ -1,18 +1,14 @@
-# The Open Science Collaboration Hub: Breaking Barriers in Scientific Research
+# Open Science Collaboration Hub: System Design
 
-## Introduction and Vision
+## 1. Introduction
 
-In laboratories across the world, cutting-edge scientific equipment worth millions sits idle for hours or days while researchers elsewhere struggle without access to the tools they need. Research institutions invest in specialized instruments that may only be used a few hours per week, while scientists at other institutions cannot conduct critical experiments due to equipment limitations.
+Scientific research faces critical bottlenecks today: expensive equipment concentrated in wealthy institutions, difficulty reproducing experiments, and siloed expertise. The Open Science Collaboration Hub aims to solve these problems by creating a platform that connects researchers with remote laboratory equipment across institutional boundaries.
 
-The Open Science Collaboration Hub aims to solve this problem by creating a platform that connects researchers with remote laboratory equipment across institutional boundaries. This platform allows scientists to discover, reserve, operate, and collect data from specialized instruments remotely, while collaborating in real-time with peers worldwide.
+This platform allows scientists to discover available equipment worldwide, reserve time on instruments, remotely control equipment through standardized interfaces, collect and analyze data in real-time with collaborators, and share experimental protocols.
 
-By democratizing access to scientific instruments, we can accelerate research progress, improve reproducibility, and maximize the return on expensive equipment investments.
+## 2. System Architecture Overview
 
-## System Architecture
-
-The system follows a microservices architecture to provide flexibility, scalability, and resilience. Each component is designed to handle specific aspects of the platform, allowing independent development and scaling.
-
-### High-Level Architecture
+The Open Science Collaboration Hub employs a microservices architecture to enable flexibility, scalability, and resilience. Each component handles specific aspects of the platform, communicating through well-defined APIs.
 
 ```mermaid
 graph TB
@@ -133,17 +129,17 @@ graph TB
     CollaborationService --> DataRepositories
 ```
 
-The architecture consists of several key layers:
+The architecture consists of five main layers:
 
-1. **Client Layer**: Web and mobile interfaces for users to interact with the platform
-2. **API Gateway**: Central entry point for all client requests with load balancing and routing
-3. **Microservices Layer**: Core functionality divided into specialized services
-4. **Data Layer**: Different database technologies optimized for specific data types
-5. **External Systems**: Integration points with laboratory equipment and third-party services
+1. **Client Layer**: Provides user interfaces for different stakeholders
+2. **API Gateway**: Manages routing, authentication, and load balancing
+3. **Service Layer**: Contains specialized microservices for different functions
+4. **Data Layer**: Stores different types of data in appropriate database systems
+5. **External Systems**: Integrates with equipment, payment services, and other platforms
 
-### Key Workflows
+## 3. Core Workflows and Data Flow
 
-The following diagram illustrates the main data flows through the system during typical usage scenarios:
+The platform supports three primary workflows: equipment discovery, reservation management, and remote operation. The following diagram illustrates how data flows through the system during these workflows:
 
 ```mermaid
 flowchart TD
@@ -225,14 +221,27 @@ flowchart TD
     DataService -->|Archives experiment data| ObjectStorage
 ```
 
-These workflows illustrate the three primary user journeys in the system:
-1. Discovering and browsing available scientific equipment
-2. Creating and managing equipment reservations
-3. Remotely operating equipment during a scheduled session
+### 3.1 Equipment Discovery Workflow
 
-### Database Schema
+Researchers browse or search for equipment based on type, specifications, or availability. The Equipment Service manages the catalog of available instruments, with detailed specifications and availability information.
 
-The database schema is designed to support the specific requirements of scientific equipment sharing, including user management, equipment specifications, and the reservation process:
+### 3.2 Reservation Workflow
+
+Once a researcher finds suitable equipment, they submit a reservation request specifying the purpose and desired time slot. The request goes through an approval process managed by laboratory personnel responsible for the equipment.
+
+The Reservation Service handles:
+- Checking for time conflicts with existing reservations
+- Managing the approval workflow
+- Notifying relevant parties about reservation status changes
+- Tracking equipment usage during scheduled sessions
+
+### 3.3 Remote Operation Workflow
+
+During their reserved time slot, researchers connect to the equipment through web interfaces. The Equipment Control Service translates standardized web commands to equipment-specific protocols, while the Data Streaming Service handles real-time data collection and distribution.
+
+## 4. Data Model
+
+The system uses a relational database schema to store user data, equipment information, and reservation details. Time-series data from equipment is stored in a specialized database optimized for measurements and telemetry.
 
 ```mermaid
 erDiagram
@@ -390,64 +399,40 @@ erDiagram
     RESERVATIONS ||--o{ USAGE_RECORDS : generates
 ```
 
-The schema is divided into three main sections:
-1. **User Management**: Handles authentication, roles, and organizational affiliations
-2. **Equipment Management**: Stores equipment details, capabilities, and access policies
-3. **Reservation Management**: Manages scheduling, approvals, and usage tracking
+The data model is organized into three main sections:
 
-## The User Experience
+1. **User Management**: User accounts, roles, permissions, and organizational affiliations
+2. **Equipment Management**: Equipment details, categories, capabilities, and access policies
+3. **Reservation Management**: Reservations, approvals, availability, and usage records
 
-To understand how the system works from a user perspective, let's walk through the main interactions with the platform:
+## 5. Technology Stack and Implementation Details
 
-### Equipment Discovery and Reservation
+### 5.1 Frontend
 
-When a researcher needs specialized equipment not available at their institution, they can:
+- **Web Application**: React with TypeScript and Material UI
+- **Mobile Application**: React Native (planned for future implementation)
+- **Equipment Control Interfaces**: WebRTC for video streams, Canvas API for interactive controls
 
-1. **Browse or search** the equipment catalog with filters for equipment type, specifications, location, and availability
-2. **View detailed information** about each instrument, including technical specifications, availability calendar, and usage policies
-3. **Select a time slot** and submit a reservation request with experiment details
-4. **Receive notifications** about the approval status of their request
-5. **Manage their reservations** through a dashboard showing upcoming, past, and pending reservations
+### 5.2 Backend Services
 
-A laboratory manager at the equipment's host institution would:
-1. **Receive notifications** about new reservation requests
-2. **Review request details** including the researcher's credentials and experiment purpose
-3. **Approve or reject** the reservation with comments
-4. **Oversee equipment usage** during scheduled sessions
+- **API Gateway**: Node.js with Express
+- **Identity Service**: Node.js with Passport.js and JWT for authentication
+- **Equipment Service**: Node.js with Express
+- **Reservation Service**: Node.js with Express and database transaction support
+- **Equipment Control Service**: Python with Flask (planned for future implementation)
+- **Data Streaming Service**: Kafka and Spark (planned for future implementation)
 
-### Remote Equipment Operation
+### 5.3 Databases
 
-During a scheduled session, researchers can:
-1. **Connect to the equipment** through a web-based control interface
-2. **Operate the instrument** using intuitive controls designed for remote use
-3. **View real-time data** from sensors and cameras
-4. **Record measurements** directly to secure storage
-5. **Invite collaborators** to observe or participate in the session
-6. **End the session** when complete, automatically saving all collected data
+- **PostgreSQL**: For user data, equipment details, and reservations
+- **TimescaleDB**: PostgreSQL extension for time-series data (usage patterns)
+- **InfluxDB**: For high-frequency measurement data (planned for future implementation)
+- **Redis**: For caching and message queuing
+- **MinIO**: S3-compatible object storage for experimental data (planned for future implementation)
 
-### Current Implementation Status
+### 5.4 Deployment
 
-For this system design project, we've implemented approximately 25% of the full platform, focusing on the core services that demonstrate the architecture and provide a foundation for future expansion:
-
-1. **Identity Service**: User authentication with JWT tokens, profile management, and role-based access control
-2. **Equipment Service**: Equipment registry with search functionality and detailed specifications
-3. **Reservation Service**: Booking system with approval workflows and conflict prevention
-4. **Basic Web Interface**: React frontend for equipment discovery and reservation management
-
-The implementation uses:
-- Node.js for backend services
-- React for frontend
-- PostgreSQL for data storage
-- Docker and Docker Compose for containerization
-- JWT for authentication
-
-The implemented components demonstrate the key architectural principles and validate our design decisions.
-
-## Addressing Non-Functional Requirements
-
-### Scalability
-
-The system is designed to handle growth in users, equipment, and data volume through:
+The system uses Docker containers orchestrated with Docker Compose for development and testing. For production, the system is designed to deploy on Kubernetes:
 
 ```mermaid
 flowchart TB
@@ -546,26 +531,32 @@ flowchart TB
     DB --> MON
 ```
 
-Key scalability features include:
-- **Horizontal scaling** of microservices behind load balancers
-- **Database sharding** for time-series experimental data
-- **Caching layer** with Redis to reduce database load
-- **Content delivery network** for static assets
-- **Kubernetes deployment** for orchestration and autoscaling
+## 6. Current Implementation Scope
 
-### Security
+For this system design project, I've implemented approximately 25% of the platform, focusing on the core services:
 
-Security is paramount when dealing with potentially sensitive scientific data:
+1. **Identity Service**: User authentication with JWT tokens and role-based access control
+2. **Equipment Service**: Equipment registry with search functionality
+3. **Reservation Service**: Booking system with approval workflows
+4. **API Gateway**: Service routing and composition
+5. **Web Frontend**: Basic interfaces for equipment discovery and reservation
 
-- **Authentication**: JWT-based authentication with role-based access control
-- **Data protection**: TLS encryption for all communications, at-rest encryption for stored data
-- **Access control**: Fine-grained permissions for equipment and data
-- **Audit logging**: Comprehensive logging of all system activities
-- **Isolation**: Network segmentation between services using Kubernetes namespaces
+The implementation demonstrates the microservices architecture and the core workflows of equipment discovery, reservation, and approval.
 
-### Reliability
+### 6.1 Reservation Service Implementation Detail
 
-The system is designed to maintain high availability despite potential failures:
+The Reservation Service is a key component that demonstrates the system's core functionality. It includes:
+
+- **Models**: Reservations, approvals, and usage records with proper relationships
+- **Controllers**: Business logic for creating, approving, and managing reservations
+- **Routes**: REST API endpoints with authentication middleware
+- **Middleware**: JWT validation and role-based access control
+
+The service implements important business rules like preventing overlapping reservations and enforcing approval workflows. It uses database transactions to ensure data consistency across related entities.
+
+### 6.2 Sequence Diagrams for Key Processes
+
+The reservation and approval process follows this sequence:
 
 ```mermaid
 sequenceDiagram
@@ -631,21 +622,46 @@ sequenceDiagram
     WebApp->>LabManager: Show confirmation
 ```
 
-Key reliability features include:
-- **Service isolation**: Failures in one component don't affect others
-- **Database replication**: Synchronous replication for critical data
-- **Automated backups**: Regular backups with point-in-time recovery
-- **Circuit breakers**: Prevent cascading failures between services
-- **Health monitoring**: Proactive detection of potential issues
+## 7. Non-Functional Requirements
 
-## Conclusion and Future Work
+### 7.1 Scalability
 
-The Open Science Collaboration Hub addresses a critical need in the scientific community by connecting researchers with remote laboratory equipment across institutional boundaries. Our implementation demonstrates the core functionality and architectural principles that will enable a full-featured platform in the future.
+The system is designed to scale with increasing users, equipment, and data volume:
+
+- **Horizontal Scaling**: Stateless services can scale horizontally behind load balancers
+- **Database Scaling**: Read replicas for user and equipment databases
+- **Data Partitioning**: Time-series data is partitioned by equipment and time periods
+- **Caching**: Redis cache reduces database load for frequently accessed data
+
+### 7.2 Security
+
+Security is critical for a system handling scientific data and equipment control:
+
+- **Authentication**: JWT-based tokens with proper expiration and refresh mechanisms
+- **Authorization**: Role-based access control with granular permissions
+- **Data Protection**: TLS for all communications, encryption for sensitive data at rest
+- **Input Validation**: All user inputs are validated to prevent injection attacks
+- **Audit Logging**: Actions affecting reservations and equipment are logged
+
+### 7.3 Reliability
+
+The system maintains high availability through:
+
+- **Fault Isolation**: Microservices architecture limits the scope of failures
+- **Circuit Breakers**: Prevent cascading failures between services
+- **Database Redundancy**: Replication for critical databases
+- **Graceful Degradation**: Non-essential features can be disabled during peak loads
+- **Monitoring**: Comprehensive health checks and alerting
+
+## 8. Conclusion and Future Work
+
+The Open Science Collaboration Hub addresses a critical need in the scientific community by connecting researchers with remote laboratory equipment. The implemented components demonstrate the core architecture and workflows, providing a foundation for the complete platform.
 
 Future development will focus on:
-1. **Remote control interfaces** for different equipment types
-2. **Real-time data streaming** from laboratory instruments
-3. **Collaborative workspaces** for multiple researchers
-4. **Protocol sharing and versioning** for reproducible science
 
-This platform has the potential to democratize access to scientific equipment, accelerate research progress, and foster collaboration across geographic and institutional boundaries. 
+1. **Equipment Control Interfaces**: Building standardized interfaces for different equipment types
+2. **Data Streaming**: Implementing real-time data collection and visualization
+3. **Collaboration Tools**: Adding features for multiple researchers to work together
+4. **Protocol Sharing**: Developing a system for documenting and sharing experimental procedures
+
+This platform has the potential to democratize access to scientific equipment, accelerate research progress, and foster collaboration across institutional boundaries. 
