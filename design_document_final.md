@@ -110,7 +110,132 @@ Non-functional requirements define the overall qualities and performance charact
 
 The Open Science Collaboration Hub employs a microservices architecture to enable flexibility, scalability, and resilience. Each component handles specific aspects of the platform, communicating through well-defined APIs.
 
-### 3.1 Architectural Philosophy and Patterns
+### 3.1 C4 Model Architecture Diagrams
+
+We use the C4 model to visualize our software architecture at different levels of abstraction.
+
+#### 3.1.1 C1: System Context Diagram
+
+The System Context diagram shows how the Open Science Collaboration Hub fits into the broader ecosystem, including its users and external systems:
+
+```mermaid
+graph TB
+    %% STYLES
+    classDef system fill:#1168bd,stroke:#0b4884,color:white
+    classDef person fill:#08427b,stroke:#052e56,color:white
+    classDef externalSystem fill:#999999,stroke:#6b6b6b,color:white
+
+    %% NODES
+    ResearcherPerson["Researcher\n[Person]"]:::person
+    LabManagerPerson["Laboratory Manager\n[Person]"]:::person
+    AdminPerson["System Administrator\n[Person]"]:::person
+    
+    OpenScienceHub["Open Science Collaboration Hub\n[Software System]\nEnables remote access to scientific equipment"]:::system
+
+    LabEquipment["Laboratory Equipment\n[External System]\nPhysical scientific instruments"]:::externalSystem
+    PaymentProcessor["Payment Processors\n[External System]\nCredit card and institutional billing"]:::externalSystem
+    InstitutionalSSO["Identity Providers\n[External System]\nInstitutional single sign-on"]:::externalSystem
+    DataRepositories["Scientific Data Repositories\n[External System]\nPermanent storage for research data"]:::externalSystem
+
+    %% CONNECTIONS
+    ResearcherPerson -->|"Searches for equipment,\nbooks reservations,\nruns experiments"| OpenScienceHub
+    LabManagerPerson -->|"Registers equipment,\nreviews reservations,\nmanages settings"| OpenScienceHub
+    AdminPerson -->|"Manages users,\nmonitors system,\nconfigures policies"| OpenScienceHub
+    
+    OpenScienceHub -->|"Controls equipment,\nstreams data"| LabEquipment
+    OpenScienceHub -->|"Processes payments\nfor usage fees"| PaymentProcessor
+    OpenScienceHub <-->|"Authenticates users"| InstitutionalSSO
+    OpenScienceHub -->|"Publishes research data\nwith DOIs"| DataRepositories
+```
+
+#### 3.1.2 C2: Container Diagram
+
+The Container diagram shows the high-level technical building blocks (containers) that make up the Open Science Collaboration Hub system:
+
+```mermaid
+graph TB
+    %% STYLES
+    classDef person fill:#08427b,stroke:#052e56,color:white
+    classDef container fill:#1168bd,stroke:#0b4884,color:white
+    classDef database fill:#1168bd,stroke:#0b4884,color:white,shape:cylinder
+    classDef externalSystem fill:#999999,stroke:#6b6b6b,color:white
+
+    subgraph OpenScienceHub[Open Science Collaboration Hub]
+        %% FRONTEND CONTAINERS
+        WebApp["Web Application\n[Container: React]\nProvides all platform functionality\nvia web browser"]:::container
+        MobileApp["Mobile Application\n[Container: React Native]\nProvides monitoring and\nnotifications on mobile devices"]:::container
+        
+        %% BACKEND CONTAINERS
+        APIGateway["API Gateway\n[Container: Node.js/Express]\nRoutes requests and handles\nauthentication"]:::container
+        
+        IdentityService["Identity Service\n[Container: Node.js]\nManages user accounts,\nroles, and authentication"]:::container
+        EquipmentService["Equipment Service\n[Container: Node.js]\nManages equipment catalog\nand search"]:::container
+        ReservationService["Reservation Service\n[Container: Node.js]\nHandles bookings and\napproval workflows"]:::container
+        NotificationService["Notification Service\n[Container: Node.js]\nDelivers alerts and\nnotifications to users"]:::container
+        ControlService["Equipment Control Service\n[Container: Python]\nInterfaces with laboratory\nequipment"]:::container
+        DataService["Data Streaming Service\n[Container: Kafka/Spark]\nProcesses and stores\nexperimental data"]:::container
+        
+        %% DATA STORES
+        UserDB["User Database\n[Container: PostgreSQL]\nStores user profiles,\nroles, and credentials"]:::database
+        EquipmentDB["Equipment Database\n[Container: PostgreSQL]\nStores equipment details\nand specifications"]:::database
+        ReservationDB["Reservation Database\n[Container: PostgreSQL]\nStores booking information\nand approval workflows"]:::database
+        TimeSeriesDB["Time Series Database\n[Container: InfluxDB]\nStores experimental\nmeasurements"]:::database
+        ObjectStorage["Object Storage\n[Container: MinIO]\nStores experiment results\nand media files"]:::database
+        
+        %% MIDDLEWARE
+        Kafka["Message Broker\n[Container: Kafka]\nHandles asynchronous\ncommunication between services"]:::container
+        Redis["Caching Layer\n[Container: Redis]\nProvides caching and\npub/sub messaging"]:::container
+    end
+    
+    %% EXTERNAL ENTITIES
+    ResearcherPerson["Researcher\n[Person]"]:::person
+    LabManagerPerson["Laboratory Manager\n[Person]"]:::person
+    LabEquipment["Laboratory Equipment\n[External System]"]:::externalSystem
+    PaymentProcessor["Payment Processors\n[External System]"]:::externalSystem
+    InstitutionalSSO["Identity Providers\n[External System]"]:::externalSystem
+    DataRepositories["Scientific Data Repositories\n[External System]"]:::externalSystem
+    
+    %% CONNECTIONS - EXTERNAL
+    ResearcherPerson -->|"Uses"| WebApp
+    ResearcherPerson -->|"Uses"| MobileApp
+    LabManagerPerson -->|"Uses"| WebApp
+    
+    %% CONNECTIONS - APIS
+    WebApp -->|"Makes API calls to"| APIGateway
+    MobileApp -->|"Makes API calls to"| APIGateway
+    
+    %% CONNECTIONS - SERVICES
+    APIGateway -->|"Routes requests to"| IdentityService
+    APIGateway -->|"Routes requests to"| EquipmentService
+    APIGateway -->|"Routes requests to"| ReservationService
+    APIGateway -->|"Routes requests to"| NotificationService
+    APIGateway -->|"Routes requests to"| ControlService
+    APIGateway -->|"Routes requests to"| DataService
+    
+    %% CONNECTIONS - DATABASES
+    IdentityService -->|"Reads from and writes to"| UserDB
+    EquipmentService -->|"Reads from and writes to"| EquipmentDB
+    ReservationService -->|"Reads from and writes to"| ReservationDB
+    ControlService -->|"Reads from"| EquipmentDB
+    DataService -->|"Writes to"| TimeSeriesDB
+    DataService -->|"Writes to"| ObjectStorage
+    
+    %% CONNECTIONS - MIDDLEWARE
+    ReservationService -->|"Publishes events to"| Kafka
+    EquipmentService -->|"Publishes events to"| Kafka
+    NotificationService -->|"Subscribes to events from"| Kafka
+    IdentityService -->|"Caches data in"| Redis
+    NotificationService -->|"Uses"| Redis
+    
+    %% CONNECTIONS - EXTERNAL SYSTEMS
+    IdentityService <-->|"Authenticates via"| InstitutionalSSO
+    ControlService <-->|"Controls"| LabEquipment
+    DataService <-->|"Collects data from"| LabEquipment
+    ReservationService -->|"Processes payments via"| PaymentProcessor
+    DataService -->|"Publishes data to"| DataRepositories
+```
+
+### 3.2 Architectural Philosophy and Patterns
 
 Our architecture follows several key design principles that shape how the system is built and operated:
 
@@ -124,7 +249,7 @@ Our architecture follows several key design principles that shape how the system
 
 **Circuit Breaker Pattern**: Services use circuit breakers when communicating with other services or external systems. This prevents cascading failures by quickly failing requests when a dependency is unhealthy, rather than allowing requests to pile up.
 
-### 3.2 System Components and Interactions
+### 3.3 System Components and Interactions
 
 ```mermaid
 graph TB

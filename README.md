@@ -9,7 +9,8 @@ For this initial implementation, we've focused on the core functionality that de
 1. **User Authentication Service**: User registration, login, and role management
 2. **Equipment Registry**: Equipment catalog with search functionality
 3. **Reservation System**: Booking time slots with approval workflows
-4. **Basic Web Interface**: Equipment discovery and reservation management
+4. **Notification Service**: Event-driven notifications for system events
+5. **Basic Web Interface**: Equipment discovery and reservation management
 
 ## Architecture Overview
 
@@ -21,9 +22,13 @@ This implementation follows a microservices architecture pattern as described in
   - Identity Service (Node.js)
   - Equipment Registry Service (Node.js)
   - Reservation Service (Node.js)
+  - Notification Service (Node.js)
 - **Databases**:
   - PostgreSQL for user, equipment, and reservation data
   - Redis for caching and session management
+- **Event Streaming**:
+  - Kafka for asynchronous event-driven communication
+  - Zookeeper for Kafka cluster management
 
 ## Prerequisites
 
@@ -52,20 +57,40 @@ docker-compose up
 4. Access the application:
 - Web UI: http://localhost:3000
 - API: http://localhost:8080
+- Kafka UI: http://localhost:8090 (for monitoring Kafka topics and messages)
 
 ## Project Structure
 
 ```
-├── client/                # Frontend React application
-├── server/                # Backend services
-│   ├── api-gateway/       # API Gateway service
-│   ├── identity-service/  # Authentication and user management
-│   ├── equipment-service/ # Equipment catalog and search
-│   └── reservation-service/ # Booking and approval workflows
-├── docker/                # Docker configuration files
-├── docs/                  # Additional documentation
-└── scripts/               # Utility scripts
+├── client/                   # Frontend React application
+├── server/                   # Backend services
+│   ├── api-gateway/          # API Gateway service
+│   ├── identity-service/     # Authentication and user management
+│   ├── equipment-service/    # Equipment catalog and search
+│   ├── reservation-service/  # Booking and approval workflows
+│   └── notification-service/ # Event-driven notification system
+├── docker/                   # Docker configuration files
+├── docs/                     # Additional documentation
+└── scripts/                  # Utility scripts
 ```
+
+## Event-Driven Architecture
+
+The system uses Kafka for asynchronous communication between services:
+
+1. **Topics**:
+   - `reservation.created`: New reservation requests
+   - `reservation.approved`: Approved reservations
+   - `reservation.rejected`: Rejected reservations
+   - `equipment.status.changed`: Equipment status updates
+
+2. **Producers**:
+   - Reservation Service: Publishes reservation events
+   - Equipment Service: Publishes equipment status events
+
+3. **Consumers**:
+   - Notification Service: Processes events to send notifications
+   - Analytics Service (future): Will process events for reporting
 
 ## Running Tests
 

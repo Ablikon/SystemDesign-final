@@ -1,0 +1,24 @@
+{
+  "name": "notification-service",
+  "version": "1.0.0",
+  "description": "Notification service for Open Science Collaboration Hub",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "jest"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "kafkajs": "^2.2.4",
+    "nodemailer": "^6.9.3",
+    "winston": "^3.9.0",
+    "dotenv": "^16.3.1",
+    "cors": "^2.8.5",
+    "joi": "^17.9.2"
+  },
+  "devDependencies": {
+    "jest": "^29.5.0",
+    "nodemon": "^2.0.22"
+  }
+} 
