@@ -1,12 +1,12 @@
 module.exports = (sequelize, DataTypes) => {
   const Approval = sequelize.define('Approval', {
     id: {
-      type: DataTypes.UUID,
+      type: DataTypes.STRING,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true
     },
     reservationId: {
-      type: DataTypes.UUID,
+      type: DataTypes.STRING,
       allowNull: false,
       field: 'reservation_id',
       references: {
@@ -15,7 +15,7 @@ module.exports = (sequelize, DataTypes) => {
       }
     },
     approverId: {
-      type: DataTypes.UUID,
+      type: DataTypes.STRING,
       allowNull: true,
       field: 'approver_id'
     },

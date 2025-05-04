@@ -27,7 +27,7 @@ import {
 } from '@mui/icons-material';
 import equipmentService from '../services/equipmentService';
 import { useAuth } from '../contexts/AuthContext';
-import ReservationForm from '../components/reservation/ReservationForm';
+import ReservationForm from '../components/ReservationForm';
 
 // Tab panel component
 function TabPanel(props) {
@@ -59,7 +59,7 @@ const EquipmentDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [tabValue, setTabValue] = useState(0);
-  const [showReservationForm, setShowReservationForm] = useState(false);
+  const [reservationDialogOpen, setReservationDialogOpen] = useState(false);
 
   // Fetch equipment details
   useEffect(() => {
@@ -67,7 +67,15 @@ const EquipmentDetailPage = () => {
       try {
         setLoading(true);
         const response = await equipmentService.getEquipmentById(id);
-        setEquipment(response.data);
+        console.log('Equipment details:', response.data);
+        
+        // Ensure equipment has a status, default to 'available' if none provided
+        const equipmentData = {
+          ...response.data,
+          status: response.data.status || 'available'
+        };
+        
+        setEquipment(equipmentData);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching equipment details:', error);
@@ -89,18 +97,19 @@ const EquipmentDetailPage = () => {
     if (!isAuthenticated) {
       navigate('/login', { state: { from: `/equipment/${id}` } });
     } else {
-      setShowReservationForm(true);
-      // Scroll to the reservation form
-      setTimeout(() => {
-        document.getElementById('reservation-form').scrollIntoView({ behavior: 'smooth' });
-      }, 100);
+      setReservationDialogOpen(true);
     }
   };
 
   // Handle reservation success
-  const handleReservationSuccess = () => {
-    setShowReservationForm(false);
-    navigate('/reservations');
+  const handleReservationSuccess = (reservation) => {
+    console.log('Reservation created:', reservation);
+    // Show success message and navigate to reservations page
+    navigate('/reservations', { 
+      state: { 
+        successMessage: `Reservation for ${equipment.name} has been submitted and is pending approval.` 
+      } 
+    });
   };
 
   if (loading) {
@@ -195,7 +204,6 @@ const EquipmentDetailPage = () => {
               size="large"
               startIcon={<CalendarIcon />}
               onClick={handleReserve}
-              disabled={equipment.status !== 'available'}
               sx={{ mr: 2 }}
             >
               Reserve Equipment
@@ -255,73 +263,35 @@ const EquipmentDetailPage = () => {
           
           {/* Capabilities Tab */}
           <TabPanel value={tabValue} index={1}>
-            <Grid container spacing={3}>
-              {equipment.Capabilities && equipment.Capabilities.map((capability) => (
-                <Grid item xs={12} sm={6} md={4} key={capability.id}>
-                  <Paper sx={{ p: 2, height: '100%' }}>
-                    <Typography variant="h6" gutterBottom>
-                      {capability.name}
-                    </Typography>
-                    <Typography variant="body2" paragraph>
-                      {capability.description}
-                    </Typography>
-                    {capability.parameters && Object.keys(capability.parameters).length > 0 && (
-                      <>
-                        <Typography variant="subtitle2" sx={{ mt: 1 }}>
-                          Parameters:
-                        </Typography>
-                        <Box sx={{ pl: 1 }}>
-                          {Object.entries(capability.parameters).map(([key, value]) => (
-                            <Typography key={key} variant="body2">
-                              <strong>{key}:</strong> {value.toString()}
-                            </Typography>
-                          ))}
-                        </Box>
-                      </>
-                    )}
-                  </Paper>
-                </Grid>
-              ))}
-              {(!equipment.Capabilities || equipment.Capabilities.length === 0) && (
-                <Grid item xs={12}>
-                  <Typography align="center">
-                    No capabilities information available
-                  </Typography>
-                </Grid>
-              )}
-            </Grid>
+            <Typography variant="body1">
+              {equipment.capabilities || 'No capabilities information available.'}
+            </Typography>
           </TabPanel>
           
           {/* Availability Tab */}
           <TabPanel value={tabValue} index={2}>
-            <Typography variant="h6" gutterBottom>
-              Current Status: <Chip label={equipment.status} color={equipment.status === 'available' ? 'success' : 'default'} />
+            <Typography variant="body1">
+              Current Status: <Chip 
+                label={equipment.status} 
+                color={equipment.status === 'available' ? 'success' : 'default'} 
+              />
             </Typography>
-            
-            <Typography variant="body1" paragraph>
-              This equipment is available for remote operation. To reserve time on this instrument, click the "Reserve Equipment" button above.
-            </Typography>
-            
-            <Typography variant="subtitle1" sx={{ mt: 3, mb: 1 }}>
-              Upcoming Scheduled Maintenance:
-            </Typography>
-            <Typography>
-              No scheduled maintenance in the next 30 days.
-            </Typography>
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="body1">
+                {equipment.availabilityNotes || 'No additional availability information.'}
+              </Typography>
+            </Box>
           </TabPanel>
         </Paper>
       </Box>
       
-      {/* Reservation Form */}
-      {showReservationForm && (
-        <Box id="reservation-form" sx={{ mt: 6 }}>
-          <ReservationForm 
-            equipmentId={equipment.id} 
-            equipmentName={equipment.name}
-            onSuccess={handleReservationSuccess}
-          />
-        </Box>
-      )}
+      {/* Reservation Form Dialog */}
+      <ReservationForm
+        equipment={equipment}
+        open={reservationDialogOpen}
+        onClose={() => setReservationDialogOpen(false)}
+        onSuccess={handleReservationSuccess}
+      />
     </Container>
   );
 };

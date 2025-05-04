@@ -1,12 +1,12 @@
 module.exports = (sequelize, DataTypes) => {
   const UsageRecord = sequelize.define('UsageRecord', {
     id: {
-      type: DataTypes.UUID,
+      type: DataTypes.STRING,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true
     },
     reservationId: {
-      type: DataTypes.UUID,
+      type: DataTypes.STRING,
       allowNull: false,
       field: 'reservation_id',
       references: {

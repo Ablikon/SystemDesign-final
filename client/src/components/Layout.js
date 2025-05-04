@@ -3,7 +3,7 @@ import { Outlet } from 'react-router-dom';
 import { Box, CssBaseline } from '@mui/material';
 import Header from './Header';
 import Footer from './Footer';
-import Sidebar from './Sidebar';
+import Sidebar, { DRAWER_WIDTH, HEADER_HEIGHT } from './Sidebar';
 import { useAuth } from '../contexts/AuthContext';
 
 const Layout = () => {
@@ -30,7 +30,12 @@ const Layout = () => {
             flexGrow: 1,
             p: 3,
             width: '100%',
-            backgroundColor: 'background.default'
+            backgroundColor: 'background.default',
+            mt: `${HEADER_HEIGHT}px`,
+            // Add left margin to main content when authenticated to prevent sidebar overlap
+            ...(isAuthenticated && {
+              ml: { xs: 0, md: `${DRAWER_WIDTH}px` }
+            })
           }}
         >
           <Outlet />

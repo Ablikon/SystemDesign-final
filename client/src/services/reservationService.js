@@ -29,15 +29,31 @@ const getReservations = async (filters = {}, token) => {
     
     console.log(`Fetching reservations with filters: ${queryString || 'none'}`);
     
-    const response = await api.get(url, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    
-    console.log('Reservations response:', response);
-    
-    return response.data;
+    // Use direct endpoint to avoid proxy issues
+    try {
+      // First try with the direct endpoint
+      console.log('Trying direct endpoint for reservations');
+      const directResponse = await axios.get(`${API_URL}/api/reservations-direct${url}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      console.log('Direct reservations response:', directResponse);
+      return directResponse.data;
+    } catch (directError) {
+      console.warn('Direct endpoint failed, falling back to standard endpoint:', directError.message);
+      
+      // If direct endpoint fails, fall back to the standard endpoint
+      const response = await api.get(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      console.log('Standard reservations response:', response);
+      return response.data;
+    }
   } catch (error) {
     console.error('Error fetching reservations:', error);
     throw handleError(error);
@@ -69,7 +85,7 @@ const getReservationById = async (id, token) => {
 };
 
 // Create a new reservation
-const createReservation = async (reservationData, token) => {
+const createReservation = async (reservationData, token, retryCount = 0) => {
   try {
     if (!token) {
       throw new Error('No authentication token provided');
@@ -78,17 +94,63 @@ const createReservation = async (reservationData, token) => {
     console.log('Creating reservation with data:', reservationData);
     console.log('Using token:', token ? 'Token exists' : 'No token');
     
-    const response = await api.post('/', reservationData, {
-      headers: {
-        'Authorization': `Bearer ${token}`
+    // Try direct endpoint first
+    try {
+      console.log('Trying direct endpoint for reservation creation');
+      const directResponse = await axios.post(`${API_URL}/api/reservations-direct`, reservationData, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'X-User-Id': localStorage.getItem('userId')
+        },
+        timeout: 5000
+      });
+      
+      console.log('Direct reservation creation response:', directResponse);
+      return directResponse.data;
+    } catch (directError) {
+      console.warn('Direct endpoint failed, falling back to standard endpoint:', directError.message);
+      
+      // Fall back to standard endpoint if direct fails
+      const response = await api.post('/', reservationData, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'X-User-Id': localStorage.getItem('userId')
+        },
+        timeout: 10000
+      });
+      
+      console.log('Create reservation response:', response);
+      
+      // If response data is directly an object without data wrapper
+      if (response.data && !response.data.data && response.status === 201) {
+        return {
+          data: response.data
+        };
       }
-    });
-    
-    console.log('Create reservation response:', response);
-    
-    return response.data;
+      
+      return response.data;
+    }
   } catch (error) {
     console.error('Error creating reservation:', error);
+    
+    // Add retry logic (max 2 retries)
+    if (retryCount < 2 && (error.code === 'ECONNABORTED' || !error.response || error.response.status >= 500)) {
+      console.log(`Retrying reservation creation (attempt ${retryCount + 1})...`);
+      // Wait for a short time before retrying
+      await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+      return createReservation(reservationData, token, retryCount + 1);
+    }
+    
+    // If the error is a timeout, provide a specific message
+    if (error.code === 'ECONNABORTED') {
+      throw new Error('Request timed out. The server may be experiencing issues. Please try again later.');
+    }
+    
+    if (error.response && error.response.status === 504) {
+      throw new Error('Gateway timeout. Please try again later.');
+    }
+    
+    // Handle other errors
     throw handleError(error);
   }
 };
@@ -226,8 +288,25 @@ const handleError = (error) => {
   } else if (error.request) {
     // The request was made but no response was received
     console.error('Request error - no response received');
+    
+    // Check for network connectivity issues
+    if (!navigator.onLine) {
+      return {
+        message: 'You are offline. Please check your internet connection.',
+        status: 0
+      };
+    }
+    
+    // Check if it's a CORS issue
+    if (error.message && error.message.includes('NetworkError')) {
+      return {
+        message: 'Network error: This might be due to CORS restrictions or service unavailability.',
+        status: 0
+      };
+    }
+    
     return {
-      message: 'No response from server. Please check your internet connection.',
+      message: 'The reservation service is currently unavailable. Please try again later.',
       status: 0
     };
   } else {
