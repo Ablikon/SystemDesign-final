@@ -3,22 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
   FormControl,
   Grid,
-  InputLabel,
-  MenuItem,
   Paper,
-  Select,
   TextField,
   Typography,
-  Alert
+  Alert,
+  CircularProgress
 } from '@mui/material';
-import { DateTimePicker } from '@mui/lab';
+import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { useAuth } from '../../contexts/AuthContext';
@@ -26,7 +19,7 @@ import reservationService from '../../services/reservationService';
 
 const ReservationForm = ({ equipmentId, equipmentName, onSuccess }) => {
   const navigate = useNavigate();
-  const { token } = useAuth();
+  const { token, currentUser } = useAuth();
   
   const [formData, setFormData] = useState({
     startTime: new Date(Date.now() + 60 * 60 * 1000), // Default: 1 hour from now
@@ -88,9 +81,17 @@ const ReservationForm = ({ equipmentId, equipmentName, onSuccess }) => {
     
     if (!validateForm()) return;
     
+    if (!token || !currentUser) {
+      setError('You must be logged in to make a reservation');
+      return;
+    }
+    
     try {
       setLoading(true);
       setError(null);
+      
+      console.log('Creating reservation with token:', token ? 'Token exists' : 'No token');
+      console.log('Reservation data:', { ...formData, equipmentId });
       
       const reservationData = {
         ...formData,
@@ -98,6 +99,7 @@ const ReservationForm = ({ equipmentId, equipmentName, onSuccess }) => {
       };
       
       const response = await reservationService.createReservation(reservationData, token);
+      console.log('Reservation created successfully:', response);
       
       setSuccess(true);
       setLoading(false);
@@ -113,13 +115,32 @@ const ReservationForm = ({ equipmentId, equipmentName, onSuccess }) => {
       }, 2000);
       
     } catch (error) {
+      console.error('Error creating reservation:', error);
       setLoading(false);
-      setError(error.message || 'Failed to create reservation. Please try again.');
+      
+      // Provide a more specific error message
+      let errorMessage = 'Failed to create reservation. Please try again.';
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.status === 401) {
+        errorMessage = 'Authentication error. Please log in again.';
+      } else if (error.status === 409) {
+        errorMessage = 'This time slot conflicts with an existing reservation.';
+      }
+      
+      setError(errorMessage);
+      
+      // If token is invalid, redirect to login
+      if (error.status === 401) {
+        setTimeout(() => {
+          navigate('/login', { state: { from: `/equipment/${equipmentId}` } });
+        }, 2000);
+      }
     }
   };
   
   return (
-    <Paper sx={{ p: 3, mt: 3 }}>
+    <Paper sx={{ p: 3, mt: 3 }} id="reservation-form">
       <Typography variant="h5" gutterBottom>
         Reserve Equipment
       </Typography>
@@ -203,13 +224,20 @@ const ReservationForm = ({ equipmentId, equipmentName, onSuccess }) => {
               >
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                variant="contained"
+              <Button 
+                type="submit" 
+                variant="contained" 
                 color="primary"
-                disabled={loading || success}
+                disabled={loading}
               >
-                {loading ? 'Submitting...' : 'Submit Reservation'}
+                {loading ? (
+                  <>
+                    <CircularProgress size={24} sx={{ mr: 1 }} />
+                    Submitting...
+                  </>
+                ) : (
+                  'Reserve Now'
+                )}
               </Button>
             </Box>
           </Grid>

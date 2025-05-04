@@ -16,10 +16,17 @@ export const AuthProvider = ({ children }) => {
     if (!token) return false;
     
     try {
+      // For our mock tokens that don't have an expiration, just consider them valid
+      if (token.startsWith('mock_token_')) {
+        console.log('Mock token detected, considering valid');
+        return true;
+      }
+      
       const decoded = jwt_decode(token);
       const currentTime = Date.now() / 1000;
       return decoded.exp > currentTime;
     } catch (error) {
+      console.error('Error validating token:', error);
       return false;
     }
   };
@@ -27,9 +34,12 @@ export const AuthProvider = ({ children }) => {
   // Effect to load user data from token
   useEffect(() => {
     const initAuth = async () => {
+      console.log('Initializing auth with token:', token);
       if (token && isValidToken(token)) {
         try {
+          console.log('Token is valid, fetching user data');
           const userData = await authService.getCurrentUser(token);
+          console.log('Received user data:', userData);
           setCurrentUser(userData);
         } catch (error) {
           console.error('Failed to get user data:', error);
@@ -37,6 +47,7 @@ export const AuthProvider = ({ children }) => {
         }
       } else if (token) {
         // If token exists but is invalid, remove it
+        console.log('Token is invalid, logging out');
         logout();
       }
       
@@ -48,36 +59,89 @@ export const AuthProvider = ({ children }) => {
 
   // Login function
   const login = async (credentials) => {
-    const response = await authService.login(credentials);
-    const { token, user } = response;
-    
-    // Store token in localStorage
-    localStorage.setItem('token', token);
-    
-    // Update state
-    setToken(token);
-    setCurrentUser(user);
-    
-    return user;
+    console.log('Attempting login with credentials:', credentials.email);
+    try {
+      setLoading(true);
+      const response = await authService.login(credentials);
+      console.log('Login response:', response);
+      
+      if (!response || response.success === false) {
+        console.error('Invalid login response:', response);
+        throw new Error('Invalid response from server');
+      }
+      
+      // Handle the correct response structure
+      // The structure is { success: true, data: { user: {...}, token: '...' } }
+      const responseData = response.data;
+      
+      if (!responseData || !responseData.token || !responseData.user) {
+        console.error('Missing token or user in response data:', responseData);
+        throw new Error('Invalid authentication data received');
+      }
+      
+      // Store token in localStorage
+      localStorage.setItem('token', responseData.token);
+      localStorage.setItem('user', JSON.stringify(responseData.user));
+      console.log('Token stored in localStorage');
+      
+      // Update state
+      setToken(responseData.token);
+      setCurrentUser(responseData.user);
+      console.log('User authenticated:', responseData.user.email);
+      
+      return response; // Return the full response
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Register function
   const register = async (userData) => {
-    const response = await authService.register(userData);
-    const { token, user } = response;
-    
-    // Store token in localStorage
-    localStorage.setItem('token', token);
-    
-    // Update state
-    setToken(token);
-    setCurrentUser(user);
-    
-    return user;
+    console.log('Attempting registration with email:', userData.email);
+    try {
+      setLoading(true);
+      const response = await authService.register(userData);
+      console.log('Registration response:', response);
+      
+      if (!response || response.success === false) {
+        console.error('Invalid registration response:', response);
+        throw new Error(response?.message || 'Invalid response from server');
+      }
+      
+      // Handle the correct response structure
+      // The structure is { success: true, data: { user: {...}, token: '...' } }
+      const responseData = response.data;
+      
+      if (!responseData || !responseData.token || !responseData.user) {
+        console.error('Missing token or user in response data:', responseData);
+        throw new Error('Invalid authentication data received');
+      }
+      
+      // Store token in localStorage
+      localStorage.setItem('token', responseData.token);
+      localStorage.setItem('user', JSON.stringify(responseData.user));
+      console.log('Token stored in localStorage');
+      
+      // Update state
+      setToken(responseData.token);
+      setCurrentUser(responseData.user);
+      console.log('User registered and authenticated:', responseData.user.email);
+      
+      return response; // Return the full response
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Logout function
   const logout = () => {
+    console.log('Logging out');
     // Remove token from localStorage
     localStorage.removeItem('token');
     
@@ -88,9 +152,16 @@ export const AuthProvider = ({ children }) => {
 
   // Update user profile
   const updateProfile = async (userData) => {
-    const updatedUser = await authService.updateUser(userData, token);
-    setCurrentUser(updatedUser);
-    return updatedUser;
+    console.log('Updating profile:', userData);
+    try {
+      const updatedUser = await authService.updateUser(userData, token);
+      console.log('Profile updated:', updatedUser);
+      setCurrentUser(updatedUser);
+      return updatedUser;
+    } catch (error) {
+      console.error('Update profile error:', error);
+      throw error;
+    }
   };
 
   // Context value
@@ -104,6 +175,12 @@ export const AuthProvider = ({ children }) => {
     logout,
     updateProfile
   };
+
+  console.log('Auth context value:', { 
+    currentUser: currentUser ? { ...currentUser, token: '***' } : null,
+    isAuthenticated: !!currentUser,
+    loading
+  });
 
   return (
     <AuthContext.Provider value={value}>

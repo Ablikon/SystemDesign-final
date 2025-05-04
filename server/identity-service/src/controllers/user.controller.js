@@ -1,106 +1,18 @@
-// Mock user data for demonstration
-const users = [
-  {
-    id: '1',
-    firstName: 'John',
-    lastName: 'Doe',
-    email: 'john.doe@example.com',
-    role: 'researcher',
-    institution: 'Stanford University',
-    position: 'Research Associate',
-    fieldOfStudy: 'Molecular Biology',
-    bio: 'Researcher focused on genetic analysis techniques.'
-  },
-  {
-    id: '2',
-    firstName: 'Jane',
-    lastName: 'Smith',
-    email: 'jane.smith@example.com',
-    role: 'lab_admin',
-    institution: 'MIT',
-    position: 'Laboratory Manager',
-    fieldOfStudy: 'Biomedical Engineering',
-    bio: 'Manages advanced laboratory equipment and resources.'
-  }
-];
+const { User, Role } = require('../models');
+const logger = require('../utils/logger');
 
 /**
  * Get the current authenticated user
  */
-exports.getCurrentUser = (req, res) => {
+exports.getCurrentUser = async (req, res, next) => {
   try {
-    // In a real app, we would fetch the user from the database based on the authenticated user ID
-    // For demo purposes, we'll just return the first user
-    const user = users.find(u => u.id === req.user.id) || users[0];
-    
-    return res.status(200).json({
-      success: true,
-      data: user
+    // Find user from database based on ID from JWT token
+    const user = await User.findByPk(req.user.id, {
+      include: [{
+        model: Role,
+        through: { attributes: [] }
+      }]
     });
-  } catch (error) {
-    console.error('Error fetching current user:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Error fetching user profile',
-      error: error.message
-    });
-  }
-};
-
-/**
- * Update the current user's profile
- */
-exports.updateProfile = (req, res) => {
-  try {
-    const { firstName, lastName, institution, position, fieldOfStudy, bio } = req.body;
-    
-    // In a real app, we would update the user in the database
-    // For demo purposes, we'll just return the updated user data
-    
-    const updatedUser = {
-      id: req.user.id,
-      firstName: firstName || req.user.firstName,
-      lastName: lastName || req.user.lastName,
-      email: req.user.email, // Email cannot be changed
-      role: req.user.role,   // Role cannot be changed
-      institution: institution || req.user.institution,
-      position: position || req.user.position,
-      fieldOfStudy: fieldOfStudy || req.user.fieldOfStudy,
-      bio: bio || req.user.bio
-    };
-    
-    return res.status(200).json({
-      success: true,
-      message: 'Profile updated successfully',
-      data: updatedUser
-    });
-  } catch (error) {
-    console.error('Error updating profile:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Error updating profile',
-      error: error.message
-    });
-  }
-};
-
-/**
- * Get a user by ID (admin only)
- */
-exports.getUserById = (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    // Check if the user has admin privileges
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied: Admin privileges required'
-      });
-    }
-    
-    // Find the user by ID
-    const user = users.find(u => u.id === id);
     
     if (!user) {
       return res.status(404).json({
@@ -114,7 +26,109 @@ exports.getUserById = (req, res) => {
       data: user
     });
   } catch (error) {
-    console.error('Error fetching user:', error);
+    logger.error(`Error fetching current user: ${error.message}`);
+    return res.status(500).json({
+      success: false,
+      message: 'Error fetching user profile',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Update the current user's profile
+ */
+exports.updateProfile = async (req, res, next) => {
+  try {
+    const { firstName, lastName, institution, position, researchInterests, bio } = req.body;
+    
+    // Find user from database
+    let user = await User.findByPk(req.user.id);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    // Update user fields
+    await user.update({
+      firstName: firstName || user.firstName,
+      lastName: lastName || user.lastName,
+      institution: institution || user.institution,
+      position: position || user.position,
+      researchInterests: researchInterests || user.researchInterests,
+      bio: bio || user.bio
+    });
+    
+    // Get updated user with roles
+    user = await User.findByPk(req.user.id, {
+      include: [{
+        model: Role,
+        through: { attributes: [] }
+      }]
+    });
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: user
+    });
+  } catch (error) {
+    logger.error(`Error updating profile: ${error.message}`);
+    return res.status(500).json({
+      success: false,
+      message: 'Error updating profile',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get a user by ID (admin only)
+ */
+exports.getUserById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    
+    // Check admin permissions
+    const adminUser = await User.findByPk(req.user.id, {
+      include: [{
+        model: Role,
+        where: { name: 'admin' },
+        required: false
+      }]
+    });
+    
+    if (!adminUser || adminUser.Roles.length === 0) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied: Admin privileges required'
+      });
+    }
+    
+    // Find the user by ID
+    const user = await User.findByPk(id, {
+      include: [{
+        model: Role,
+        through: { attributes: [] }
+      }]
+    });
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    return res.status(200).json({
+      success: true,
+      data: user
+    });
+  } catch (error) {
+    logger.error(`Error fetching user by ID: ${error.message}`);
     return res.status(500).json({
       success: false,
       message: 'Error fetching user',
@@ -126,15 +140,31 @@ exports.getUserById = (req, res) => {
 /**
  * Get all users (admin only)
  */
-exports.getAllUsers = (req, res) => {
+exports.getAllUsers = async (req, res, next) => {
   try {
-    // Check if the user has admin privileges
-    if (req.user.role !== 'admin') {
+    // Check admin permissions
+    const adminUser = await User.findByPk(req.user.id, {
+      include: [{
+        model: Role,
+        where: { name: 'admin' },
+        required: false
+      }]
+    });
+    
+    if (!adminUser || adminUser.Roles.length === 0) {
       return res.status(403).json({
         success: false,
         message: 'Access denied: Admin privileges required'
       });
     }
+    
+    // Get all users with their roles
+    const users = await User.findAll({
+      include: [{
+        model: Role,
+        through: { attributes: [] }
+      }]
+    });
     
     return res.status(200).json({
       success: true,
@@ -142,7 +172,7 @@ exports.getAllUsers = (req, res) => {
       data: users
     });
   } catch (error) {
-    console.error('Error fetching users:', error);
+    logger.error(`Error fetching all users: ${error.message}`);
     return res.status(500).json({
       success: false,
       message: 'Error fetching users',
@@ -154,20 +184,28 @@ exports.getAllUsers = (req, res) => {
 /**
  * Create a new user (admin only)
  */
-exports.createUser = (req, res) => {
+exports.createUser = async (req, res, next) => {
   try {
-    // Check if the user has admin privileges
-    if (req.user.role !== 'admin') {
+    // Check admin permissions
+    const adminUser = await User.findByPk(req.user.id, {
+      include: [{
+        model: Role,
+        where: { name: 'admin' },
+        required: false
+      }]
+    });
+    
+    if (!adminUser || adminUser.Roles.length === 0) {
       return res.status(403).json({
         success: false,
         message: 'Access denied: Admin privileges required'
       });
     }
     
-    const { firstName, lastName, email, role, institution, position, fieldOfStudy, bio } = req.body;
+    const { firstName, lastName, email, password, roleName, institution, position, researchInterests, bio } = req.body;
     
     // Validate required fields
-    if (!firstName || !lastName || !email || !role) {
+    if (!firstName || !lastName || !email || !password) {
       return res.status(400).json({
         success: false,
         message: 'Missing required fields'
@@ -175,36 +213,55 @@ exports.createUser = (req, res) => {
     }
     
     // Check if email already exists
-    if (users.some(u => u.email === email)) {
+    const existingUser = await User.findOne({ where: { email } });
+    if (existingUser) {
       return res.status(400).json({
         success: false,
         message: 'Email already in use'
       });
     }
     
-    // Create new user (in a real app, we would save to database)
-    const newUser = {
-      id: (users.length + 1).toString(),
+    // Create new user
+    const newUser = await User.create({
       firstName,
       lastName,
       email,
-      role,
+      password, // Will be hashed by the model hook
       institution: institution || '',
       position: position || '',
-      fieldOfStudy: fieldOfStudy || '',
+      researchInterests: researchInterests || [],
       bio: bio || ''
-    };
+    });
     
-    // Add to users array (in a real app, we would save to database)
-    users.push(newUser);
+    // Assign role if specified
+    if (roleName) {
+      const role = await Role.findOne({ where: { name: roleName } });
+      if (role) {
+        await newUser.addRole(role);
+      }
+    } else {
+      // Assign default researcher role
+      const researcherRole = await Role.findOne({ where: { name: 'researcher' } });
+      if (researcherRole) {
+        await newUser.addRole(researcherRole);
+      }
+    }
+    
+    // Get user with roles
+    const createdUser = await User.findByPk(newUser.id, {
+      include: [{
+        model: Role,
+        through: { attributes: [] }
+      }]
+    });
     
     return res.status(201).json({
       success: true,
       message: 'User created successfully',
-      data: newUser
+      data: createdUser
     });
   } catch (error) {
-    console.error('Error creating user:', error);
+    logger.error(`Error creating user: ${error.message}`);
     return res.status(500).json({
       success: false,
       message: 'Error creating user',
@@ -216,12 +273,20 @@ exports.createUser = (req, res) => {
 /**
  * Delete a user (admin only)
  */
-exports.deleteUser = (req, res) => {
+exports.deleteUser = async (req, res, next) => {
   try {
     const { id } = req.params;
     
-    // Check if the user has admin privileges
-    if (req.user.role !== 'admin') {
+    // Check admin permissions
+    const adminUser = await User.findByPk(req.user.id, {
+      include: [{
+        model: Role,
+        where: { name: 'admin' },
+        required: false
+      }]
+    });
+    
+    if (!adminUser || adminUser.Roles.length === 0) {
       return res.status(403).json({
         success: false,
         message: 'Access denied: Admin privileges required'
@@ -229,25 +294,24 @@ exports.deleteUser = (req, res) => {
     }
     
     // Find the user by ID
-    const userIndex = users.findIndex(u => u.id === id);
+    const user = await User.findByPk(id);
     
-    if (userIndex === -1) {
+    if (!user) {
       return res.status(404).json({
         success: false,
         message: 'User not found'
       });
     }
     
-    // Remove the user (in a real app, we would delete from database)
-    const deletedUser = users.splice(userIndex, 1)[0];
+    // Delete the user
+    await user.destroy();
     
     return res.status(200).json({
       success: true,
-      message: 'User deleted successfully',
-      data: deletedUser
+      message: 'User deleted successfully'
     });
   } catch (error) {
-    console.error('Error deleting user:', error);
+    logger.error(`Error deleting user: ${error.message}`);
     return res.status(500).json({
       success: false,
       message: 'Error deleting user',

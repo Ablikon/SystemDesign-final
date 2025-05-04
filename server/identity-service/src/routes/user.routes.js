@@ -1,24 +1,24 @@
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/user.controller');
-const authMiddleware = require('../middleware/auth.middleware');
+const { authenticate } = require('../middleware/auth.middleware');
 
 // Get current user profile
-router.get('/profile', authMiddleware, userController.getCurrentUser);
+router.get('/profile', authenticate, userController.getCurrentUser);
 
 // Update user profile
-router.put('/profile', authMiddleware, userController.updateProfile);
+router.put('/profile', authenticate, userController.updateProfile);
 
 // Get user by ID (admin only)
-router.get('/:id', authMiddleware, userController.getUserById);
+router.get('/:id', authenticate, userController.getUserById);
 
 // Get all users (admin only)
-router.get('/', authMiddleware, userController.getAllUsers);
+router.get('/', authenticate, userController.getAllUsers);
 
 // Create a new user (admin only)
-router.post('/', authMiddleware, userController.createUser);
+router.post('/', authenticate, userController.createUser);
 
 // Delete a user (admin only)
-router.delete('/:id', authMiddleware, userController.deleteUser);
+router.delete('/:id', authenticate, userController.deleteUser);
 
 module.exports = router; 

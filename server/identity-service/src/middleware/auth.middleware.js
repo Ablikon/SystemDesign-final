@@ -1,11 +1,12 @@
 const jwt = require('jsonwebtoken');
 const { ApiError } = require('./error.middleware');
 const { User, Role } = require('../models');
+const logger = require('../utils/logger');
 
 /**
  * Middleware to authenticate JWT tokens
  */
-module.exports = (req, res, next) => {
+const authenticate = async (req, res, next) => {
   try {
     // Get token from header
     const authHeader = req.headers.authorization;
@@ -28,54 +29,38 @@ module.exports = (req, res, next) => {
     }
     
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret_key_here');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    
+    // Find user in database
+    const user = await User.findByPk(decoded.id);
+    
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token. User not found.'
+      });
+    }
     
     // Add user info to request
     req.user = decoded;
     
-    // For demo purposes if JWT verification fails
-    if (!req.user) {
-      req.user = {
-        id: '1',
-        email: 'john.doe@example.com',
-        firstName: 'John',
-        lastName: 'Doe',
-        role: 'researcher'
-      };
-    }
-    
     next();
   } catch (error) {
-    console.error('Auth middleware error:', error);
+    logger.error(`Authentication error: ${error.message}`);
     
-    // For demo purposes, allow the request to proceed with a default user
-    // In a real app, this would return a 401 error
-    req.user = {
-      id: '1',
-      email: 'john.doe@example.com',
-      firstName: 'John',
-      lastName: 'Doe',
-      role: 'researcher'
-    };
-    
-    next();
-    
-    // Uncomment in production
-    /*
     return res.status(401).json({
       success: false,
       message: 'Invalid token',
       error: error.message
     });
-    */
   }
 };
 
 // Check if user has the required role
-exports.hasRole = (roleName) => {
+const hasRole = (roleName) => {
   return async (req, res, next) => {
     try {
-      const user = await User.findByPk(req.userId, {
+      const user = await User.findByPk(req.user.id, {
         include: [{
           model: Role,
           where: { name: roleName },
@@ -99,7 +84,7 @@ exports.hasRole = (roleName) => {
 };
 
 // Validate request body
-exports.validateRequest = (schema) => {
+const validateRequest = (schema) => {
   return (req, res, next) => {
     const { error } = schema.validate(req.body);
     
@@ -110,4 +95,10 @@ exports.validateRequest = (schema) => {
     
     next();
   };
+};
+
+module.exports = {
+  authenticate,
+  hasRole,
+  validateRequest
 }; 

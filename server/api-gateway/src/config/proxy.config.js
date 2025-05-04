@@ -10,6 +10,7 @@ const RESERVATION_SERVICE_URL = process.env.RESERVATION_SERVICE_URL || 'http://l
 const proxyOptions = {
   changeOrigin: true,
   pathRewrite: {
+    '^/api/auth': '/api/auth',
     '^/api/users': '/api/users',
     '^/api/equipment': '/api/equipment',
     '^/api/categories': '/api/categories',
@@ -18,6 +19,12 @@ const proxyOptions = {
   logLevel: 'silent', // We'll handle logging
   onProxyReq: (proxyReq, req, res) => {
     logger.debug(`Proxying request to: ${proxyReq.path}`);
+    
+    // Add additional debugging
+    logger.debug(`Proxy headers: ${JSON.stringify(proxyReq.getHeaders())}`);
+    if (req.body) {
+      logger.debug(`Request body: ${JSON.stringify(req.body)}`);
+    }
   },
   onError: (err, req, res) => {
     logger.error(`Proxy error: ${err.message}`);
@@ -25,13 +32,15 @@ const proxyOptions = {
       status: 'error',
       message: 'Service temporarily unavailable'
     });
-  }
+  },
+  // Add timeout configuration
+  timeout: 30000 // 30 seconds timeout
 };
 
 // Proxy routes configuration
 const proxyRoutes = [
   {
-    context: ['/api/users'],
+    context: ['/api/auth', '/api/users'],
     target: IDENTITY_SERVICE_URL,
     ...proxyOptions
   },

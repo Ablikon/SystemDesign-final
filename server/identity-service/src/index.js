@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { sequelize } = require('./models');
+const { sequelize, Role } = require('./models');
 const userRoutes = require('./routes/user.routes');
 const authRoutes = require('./routes/auth.routes');
 const roleRoutes = require('./routes/role.routes');
@@ -34,12 +34,38 @@ app.get('/health', (req, res) => {
 // Error handling middleware
 app.use(errorHandler);
 
+// Initialize default roles
+async function initRoles() {
+  try {
+    const roles = ['researcher', 'lab_manager', 'admin'];
+    
+    for (const roleName of roles) {
+      const existingRole = await Role.findOne({ where: { name: roleName } });
+      
+      if (!existingRole) {
+        await Role.create({
+          name: roleName,
+          description: `${roleName.charAt(0).toUpperCase() + roleName.slice(1)} role`
+        });
+        logger.info(`Created role: ${roleName}`);
+      }
+    }
+    
+    logger.info('Roles initialized successfully');
+  } catch (error) {
+    logger.error('Failed to initialize roles:', error);
+  }
+}
+
 // Start server
 async function startServer() {
   try {
     // Sync database models
     await sequelize.sync();
     logger.info('Database synchronized successfully');
+    
+    // Initialize roles
+    await initRoles();
 
     // Start listening
     app.listen(PORT, () => {

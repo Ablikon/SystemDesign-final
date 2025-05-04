@@ -1,18 +1,7 @@
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const { User, Role } = require('../models');
 const logger = require('../utils/logger');
-
-// Mock users for in-memory storage
-const users = [
-  {
-    id: '1',
-    email: 'john.doe@example.com',
-    password: '$2a$10$XHbkKJl95ZyDHAm9LYtY3.Rzy9T2T0isCZfm/4fNfXYAmzmGd8XIi', // 'password123'
-    firstName: 'John',
-    lastName: 'Doe',
-    institution: 'Stanford University',
-    researchInterests: ['Genetics', 'Bioinformatics']
-  }
-];
 
 // Register a new user
 exports.register = async (req, res, next) => {
@@ -28,7 +17,7 @@ exports.register = async (req, res, next) => {
     }
 
     // Check if user already exists
-    const existingUser = users.find(u => u.email === email);
+    const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
       return res.status(409).json({
         success: false,
@@ -36,19 +25,23 @@ exports.register = async (req, res, next) => {
       });
     }
 
-    // Create a mock user (in a real app, we would hash the password)
-    const newUser = {
-      id: (users.length + 1).toString(),
+    // Create new user in database
+    const newUser = await User.create({
       email,
-      password, // In a real app, this would be hashed
+      password, // Will be hashed by the beforeCreate hook in the model
       firstName,
       lastName,
       institution: institution || '',
       researchInterests: researchInterests || []
-    };
+    });
 
-    // Add to users array
-    users.push(newUser);
+    // Find the researcher role
+    const researcherRole = await Role.findOne({ where: { name: 'researcher' } });
+    
+    // Assign researcher role to user
+    if (researcherRole) {
+      await newUser.addRole(researcherRole);
+    }
 
     // Generate token
     const token = jwt.sign(
@@ -59,15 +52,11 @@ exports.register = async (req, res, next) => {
 
     logger.info(`New user registered: ${email}`);
 
-    // Don't send the password back
-    const userResponse = { ...newUser };
-    delete userResponse.password;
-
     // Return user data and token
     return res.status(201).json({
       success: true,
       data: {
-        user: userResponse,
+        user: newUser.toJSON(),
         token
       }
     });
@@ -87,11 +76,19 @@ exports.login = async (req, res, next) => {
     const { email, password } = req.body;
 
     // Find user
-    const user = users.find(u => u.email === email);
+    const user = await User.findOne({ where: { email } });
 
-    // Check if user exists and password is correct
-    // In a real app, we would compare hashed passwords
-    if (!user || user.password !== password) {
+    // Check if user exists
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password'
+      });
+    }
+
+    // Check password
+    const isPasswordValid = await user.validPassword(password);
+    if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password'
@@ -107,15 +104,11 @@ exports.login = async (req, res, next) => {
 
     logger.info(`User logged in: ${email}`);
 
-    // Don't send the password back
-    const userResponse = { ...user };
-    delete userResponse.password;
-
     // Return user data and token
     return res.status(200).json({
       success: true,
       data: {
-        user: userResponse,
+        user: user.toJSON(),
         token
       }
     });
@@ -133,7 +126,14 @@ exports.login = async (req, res, next) => {
 exports.me = async (req, res, next) => {
   try {
     // Find user by ID from token
-    const user = users.find(u => u.id === req.user.id);
+    const user = await User.findByPk(req.user.id, {
+      include: [
+        {
+          model: Role,
+          through: { attributes: [] }
+        }
+      ]
+    });
 
     if (!user) {
       return res.status(404).json({
@@ -142,13 +142,9 @@ exports.me = async (req, res, next) => {
       });
     }
 
-    // Don't send the password back
-    const userResponse = { ...user };
-    delete userResponse.password;
-
     return res.status(200).json({
       success: true,
-      data: userResponse
+      data: user.toJSON()
     });
   } catch (error) {
     logger.error(`Get profile error: ${error.message}`);
