@@ -86,6 +86,57 @@ app.get('/api/test', (req, res) => {
   });
 });
 
+// Temporary endpoint routes until microservices are fully implemented
+// Dashboard statistics
+app.get('/dashboard/stats', (req, res) => {
+  logger.info('Processing dashboard stats request');
+  return res.status(200).json({
+    upcomingReservations: 3,
+    pastReservations: 12,
+    favoriteEquipment: 5
+  });
+});
+
+// Recent reservations
+app.get('/reservations/recent', (req, res) => {
+  logger.info('Processing recent reservations request');
+  return res.status(200).json([
+    { id: 1, equipmentName: "Electron Microscope", date: "2025-05-10", status: "Approved" },
+    { id: 2, equipmentName: "Spectrophotometer", date: "2025-05-15", status: "Pending" },
+    { id: 3, equipmentName: "NMR Spectrometer", date: "2025-05-20", status: "Approved" }
+  ]);
+});
+
+// Notifications
+app.get('/notifications', (req, res) => {
+  logger.info('Processing notifications request');
+  return res.status(200).json([
+    { id: 1, message: "Your reservation for Electron Microscope has been approved", date: "2025-05-01", read: false },
+    { id: 2, message: "New equipment added: Thermal Cycler", date: "2025-04-29", read: true },
+    { id: 3, message: "Your report for NMR Spectrometer usage is due tomorrow", date: "2025-04-28", read: false }
+  ]);
+});
+
+// User activity
+app.get('/user/activity', (req, res) => {
+  logger.info('Processing user activity request');
+  return res.status(200).json([
+    { id: 1, type: 'Reservation', date: '2025-04-28', description: 'Reserved Electron Microscope' },
+    { id: 2, type: 'Data Upload', date: '2025-04-25', description: 'Uploaded research findings' },
+    { id: 3, type: 'Equipment Use', date: '2025-04-22', description: 'Used DNA Sequencer' }
+  ]);
+});
+
+// User favorites
+app.get('/user/favorites', (req, res) => {
+  logger.info('Processing user favorites request');
+  return res.status(200).json([
+    { id: 101, name: 'Electron Microscope', facility: 'Imaging Center' },
+    { id: 102, name: 'Mass Spectrometer', facility: 'Chemical Analysis Lab' },
+    { id: 103, name: 'DNA Sequencer', facility: 'Genomics Department' }
+  ]);
+});
+
 // Эндпоинт для проверки доступности всех сервисов
 app.get('/api/system/status', async (req, res) => {
   logger.info('Checking system status');
@@ -212,7 +263,54 @@ app.post('/api/auth/login-direct', async (req, res) => {
       });
       
       logger.info('Direct login response for', email, ':', response.status);
-      return res.status(response.status).json(response.data);
+      
+      // Получаем данные из ответа сервера
+      const responseData = response.data;
+      
+      // Гарантируем, что ответ имеет ожидаемую структуру
+      // Формат: { success: true, data: { user: {...}, token: '...' } }
+      let formattedResponse = {
+        success: true,
+        data: {
+          token: '',
+          user: {}
+        }
+      };
+      
+      // Проверяем различные варианты структуры ответа и нормализуем
+      if (responseData.success === true && responseData.data && 
+          responseData.data.token && responseData.data.user) {
+        // Уже в нужном формате
+        formattedResponse = responseData;
+      }
+      else if (responseData.token && responseData.user) {
+        // Вариант: { token, user }
+        formattedResponse.data.token = responseData.token;
+        formattedResponse.data.user = responseData.user;
+      }
+      else if (responseData.data && responseData.data.token && responseData.data.user) {
+        // Вариант: { data: { token, user } } без success
+        formattedResponse.data = responseData.data;
+      }
+      else {
+        // Поиск token и user в любой структуре
+        formattedResponse.data.token = responseData.token || 
+                                      (responseData.data && responseData.data.token) || 
+                                      '';
+        formattedResponse.data.user = responseData.user || 
+                                     (responseData.data && responseData.data.user) || 
+                                     { email };
+      }
+      
+      logger.info('Formatted login response structure:', 
+                 JSON.stringify({
+                   success: formattedResponse.success,
+                   dataExists: !!formattedResponse.data,
+                   tokenExists: !!formattedResponse.data.token,
+                   userExists: !!formattedResponse.data.user
+                 }));
+      
+      return res.status(200).json(formattedResponse);
     } catch (apiError) {
       if (apiError.response) {
         logger.error(`API error: ${apiError.response.status} - ${JSON.stringify(apiError.response.data)}`);

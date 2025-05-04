@@ -73,26 +73,18 @@ const LoginPage = () => {
     
     try {
       console.log(`Sending login request for email: ${formData.email}`);
+      
+      // Call the login function from AuthContext
       const response = await login(formData);
       
       // Clear timeout as we got a response
       clearTimeout(timeout);
       
-      if (response && response.data && response.data.token) {
-        // Login successful
-        setLoginStatus('success');
-        
-        // Store auth token and user data in localStorage
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-        
-        // Navigate to dashboard
-        navigate('/dashboard');
-      } else {
-        // Invalid response format
-        setLoginStatus('error');
-        setErrorMessage('Invalid server response. Please try again.');
-      }
+      // Set success status
+      setLoginStatus('success');
+      console.log('Login successful, auth context updated');
+      
+      // The redirection will be handled by the useEffect that watches isAuthenticated
     } catch (error) {
       // Clear timeout as we got an error
       clearTimeout(timeout);
@@ -109,7 +101,7 @@ const LoginPage = () => {
   // If already authenticated, redirect to dashboard
   useEffect(() => {
     if (isAuthenticated) {
-      console.log('User already authenticated, redirecting to dashboard');
+      console.log('User is authenticated, redirecting to dashboard');
       navigate('/dashboard');
     }
   }, [isAuthenticated, navigate]);

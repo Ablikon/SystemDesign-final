@@ -96,3 +96,9 @@
 {"error":{"name":"KafkaJSNumberOfRetriesExceeded","retriable":false,"retryCount":5,"retryTime":8876},"level":"error","message":"Failed to start Kafka consumer: Connection error: getaddrinfo ENOTFOUND kafka","timestamp":"2025-05-04T04:28:12.430Z"}
 {"level":"info","message":"SIGTERM signal received, shutting down gracefully","timestamp":"2025-05-04T04:28:14.771Z"}
 {"level":"info","message":"Notification service listening on port 3004","timestamp":"2025-05-04T04:28:36.909Z"}
+{"level":"info","message":"SIGTERM signal received, shutting down gracefully","timestamp":"2025-05-04T05:00:54.272Z"}
+{"level":"info","message":"Notification service listening on port 3004","timestamp":"2025-05-04T05:00:54.843Z"}
+{"error":{"name":"KafkaJSNumberOfRetriesExceeded","retriable":false,"retryCount":5,"retryTime":6296},"level":"error","message":"Failed to start Kafka consumer: Connection error: getaddrinfo ENOTFOUND kafka","timestamp":"2025-05-04T05:01:03.350Z"}
+{"error":{"name":"KafkaJSNumberOfRetriesExceeded","retriable":false,"retryCount":5,"retryTime":9364},"level":"error","message":"Failed to start Kafka consumer: Connection error: getaddrinfo ENOTFOUND kafka","timestamp":"2025-05-04T05:01:18.253Z"}
+{"error":{"name":"KafkaJSNumberOfRetriesExceeded","retriable":false,"retryCount":5,"retryTime":8712},"level":"error","message":"Failed to start Kafka consumer: Connection error: getaddrinfo ENOTFOUND kafka","timestamp":"2025-05-04T05:01:31.227Z"}
+{"error":{"name":"KafkaJSNumberOfRetriesExceeded","retriable":false,"retryCount":5,"retryTime":8568},"level":"error","message":"Failed to start Kafka consumer: Connection error: getaddrinfo ENOTFOUND kafka","timestamp":"2025-05-04T05:01:45.162Z"}

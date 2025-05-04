@@ -25,7 +25,11 @@ const login = async (credentials) => {
       throw new Error(`Server responded with status: ${response.status}`);
     }
     
-    return response.data;
+    // Нормализуем ответ для обеспечения единообразия структуры
+    const normalizedResponse = normalizeAuthResponse(response.data);
+    console.log('Normalized response:', normalizedResponse);
+    
+    return normalizedResponse;
   } catch (error) {
     console.error('Login error:', error);
     if (error.code === 'ECONNABORTED') {
