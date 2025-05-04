@@ -23,7 +23,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 export const DRAWER_WIDTH = 240;
 
-export const HEADER_HEIGHT = 67;
+export const HEADER_HEIGHT = 68.5;
 
 const Sidebar = ({ open, onClose }) => {
   const navigate = useNavigate();

@@ -186,6 +186,7 @@ export default function ProfilePage() {
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                   <Avatar
+                    src="/images/avatar.jpg"
                     sx={{ width: 80, height: 80, mr: 3, bgcolor: 'primary.main' }}
                   >
                     {profile.firstName?.charAt(0)}{profile.lastName?.charAt(0)}
@@ -360,23 +361,54 @@ export default function ProfilePage() {
               </Grid>
               
               <Grid item>
-                <Card>
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
-                      <BookmarkIcon sx={{ mr: 1 }} /> Favorite Equipment
-                    </Typography>
-                    <List dense>
-                      {favoriteEquipment.map(equipment => (
-                        <ListItem key={equipment.id}>
-                          <ListItemText
-                            primary={equipment.name}
-                            secondary={equipment.facility}
-                          />
-                        </ListItem>
-                      ))}
-                    </List>
-                  </CardContent>
-                </Card>
+                <Paper sx={{ p: 3 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <BookmarkIcon color="primary" sx={{ mr: 1 }} />
+                    <Typography variant="h6">Favorite Equipment</Typography>
+                  </Box>
+                  <Grid container spacing={2}>
+                    {favoriteEquipment.map(item => (
+                      <Grid item xs={12} sm={6} md={4} key={item.id}>
+                        <Card>
+                          <Box sx={{ position: 'relative' }}>
+                            <img 
+                              src={`/images/equipment${item.id % 5 + 1}.jpg`}
+                              alt={item.name}
+                              style={{ width: '100%', height: '140px', objectFit: 'cover' }}
+                            />
+                            <Box 
+                              sx={{ 
+                                position: 'absolute', 
+                                bottom: 0, 
+                                width: '100%', 
+                                bgcolor: 'rgba(0,0,0,0.6)',
+                                color: 'white',
+                                p: 1
+                              }}
+                            >
+                              <Typography variant="subtitle1">
+                                {item.name}
+                              </Typography>
+                              <Typography variant="caption">
+                                {item.facility}
+                              </Typography>
+                            </Box>
+                          </Box>
+                          <Box sx={{ p: 1, display: 'flex', justifyContent: 'flex-end' }}>
+                            <Button 
+                              size="small" 
+                              color="primary" 
+                              variant="outlined"
+                              href={`/equipment/${item.id}`}
+                            >
+                              View
+                            </Button>
+                          </Box>
+                        </Card>
+                      </Grid>
+                    ))}
+                  </Grid>
+                </Paper>
               </Grid>
             </Grid>
           </Grid>

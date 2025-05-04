@@ -5,6 +5,7 @@ const rateLimit = require('express-rate-limit');
 const swaggerJsDoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 const axios = require('axios');
+const path = require('path');
 const { setupProxies } = require('./config/proxy.config');
 const { errorHandler } = require('./middleware/error.middleware');
 const logger = require('./utils/logger');
@@ -12,6 +13,9 @@ const logger = require('./utils/logger');
 // Initialize Express app
 const app = express();
 const PORT = process.env.PORT || 8080;
+
+// Serve static files
+app.use('/images', express.static(path.join(__dirname, '../public/images')));
 
 // Service URLs
 const IDENTITY_SERVICE_URL = process.env.IDENTITY_SERVICE_URL || 'http://identity-service:3001';
@@ -87,55 +91,264 @@ app.get('/api/test', (req, res) => {
   });
 });
 
-// Temporary endpoint routes until microservices are fully implemented
 // Dashboard statistics
 app.get('/dashboard/stats', (req, res) => {
   logger.info('Processing dashboard stats request');
+
+  // Получаем токен пользователя, если есть
+  const authHeader = req.headers.authorization;
+  const isAuthenticated = !!(authHeader && authHeader.startsWith('Bearer '));
+  
+  // Если пользователь аутентифицирован, возвращаем персонализированную статистику
+  if (isAuthenticated) {
+    return res.status(200).json({
+      upcomingReservations: 3,
+      pastReservations: 12,
+      favoriteEquipment: 5,
+      pendingApprovals: 2,
+      totalUsageHours: 127,
+      lastLogin: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() // 2 дня назад
+    });
+  }
+  
+  // Для неаутентифицированных пользователей вернем общую статистику
   return res.status(200).json({
-    upcomingReservations: 3,
-    pastReservations: 12,
-    favoriteEquipment: 5
+    upcomingReservations: 0,
+    pastReservations: 0,
+    favoriteEquipment: 0
   });
 });
 
 // Recent reservations
 app.get('/reservations/recent', (req, res) => {
   logger.info('Processing recent reservations request');
-  return res.status(200).json([
-    { id: 1, equipmentName: "Electron Microscope", date: "2025-05-10", status: "Approved" },
-    { id: 2, equipmentName: "Spectrophotometer", date: "2025-05-15", status: "Pending" },
-    { id: 3, equipmentName: "NMR Spectrometer", date: "2025-05-20", status: "Approved" }
-  ]);
+  
+  // Получаем токен пользователя, если есть
+  const authHeader = req.headers.authorization;
+  const isAuthenticated = !!(authHeader && authHeader.startsWith('Bearer '));
+  const token = isAuthenticated ? authHeader.split(' ')[1] : null;
+  
+  // Текущая дата для генерации относительных дат
+  const now = new Date();
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  
+  const nextMonth = new Date(now);
+  nextMonth.setMonth(nextMonth.getMonth() + 1);
+  
+  // Моковые данные для резерваций
+  const reservations = [
+    {
+      id: '1001',
+      equipmentId: '101',
+      equipmentName: "Electron Microscope XL-30",
+      userId: token === 'test_token_123456789' ? '12345' : 'b2334c2f-1515-420f-9b27-c4a41b1be7a2',
+      date: "May 10, 2025",
+      startTime: yesterday.toISOString(),
+      endTime: new Date(yesterday.getTime() + 4 * 60 * 60 * 1000).toISOString(), // +4 часа
+      status: "completed",
+      purpose: "Research on cell structure",
+      facility: "Imaging Center",
+      createdAt: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000).toISOString()
+    },
+    {
+      id: '1002',
+      equipmentId: '102',
+      equipmentName: "Mass Spectrometer 5800",
+      userId: token === 'test_token_123456789' ? '12345' : 'b2334c2f-1515-420f-9b27-c4a41b1be7a2',
+      date: "Jun 15, 2025",
+      startTime: new Date(now.getTime() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+      endTime: new Date(now.getTime() + 15 * 24 * 60 * 60 * 1000 + 6 * 60 * 60 * 1000).toISOString(),
+      status: "canceled",
+      purpose: "Protein analysis",
+      facility: "Proteomics Lab",
+      createdAt: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString()
+    },
+    {
+      id: '1003',
+      equipmentId: '103',
+      equipmentName: "NMR Spectrometer",
+      userId: token === 'test_token_123456789' ? '12345' : 'b2334c2f-1515-420f-9b27-c4a41b1be7a2',
+      date: "May 25, 2025",
+      startTime: new Date(now.getTime() + 25 * 24 * 60 * 60 * 1000).toISOString(),
+      endTime: new Date(now.getTime() + 25 * 24 * 60 * 60 * 1000 + 8 * 60 * 60 * 1000).toISOString(),
+      status: "canceled",
+      purpose: "Chemical compound analysis",
+      facility: "Chemistry Department",
+      createdAt: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
+    },
+    {
+      id: '1004',
+      equipmentId: '104',
+      equipmentName: "Confocal Microscope",
+      userId: token === 'test_token_123456789' ? '12345' : 'b2334c2f-1515-420f-9b27-c4a41b1be7a2',
+      date: "May 17, 2025",
+      startTime: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      endTime: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000 + 5 * 60 * 60 * 1000).toISOString(),
+      status: "approved",
+      purpose: "Cell imaging",
+      facility: "Imaging Center",
+      createdAt: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString()
+    }
+  ];
+  
+  return res.status(200).json(reservations);
 });
 
 // Notifications
 app.get('/notifications', (req, res) => {
   logger.info('Processing notifications request');
-  return res.status(200).json([
-    { id: 1, message: "Your reservation for Electron Microscope has been approved", date: "2025-05-01", read: false },
-    { id: 2, message: "New equipment added: Thermal Cycler", date: "2025-04-29", read: true },
-    { id: 3, message: "Your report for NMR Spectrometer usage is due tomorrow", date: "2025-04-28", read: false }
-  ]);
+  
+  // Получаем токен пользователя, если есть
+  const authHeader = req.headers.authorization;
+  const isAuthenticated = !!(authHeader && authHeader.startsWith('Bearer '));
+  const token = isAuthenticated ? authHeader.split(' ')[1] : null;
+  
+  // Текущая дата для генерации относительных дат
+  const now = new Date();
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  
+  const twoDaysAgo = new Date(now);
+  twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+  
+  const threeDaysAgo = new Date(now);
+  threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+  
+  // Моковые данные для уведомлений
+  const notifications = [
+    {
+      id: 'notif-1',
+      userId: token === 'test_token_123456789' ? '12345' : 'b2334c2f-1515-420f-9b27-c4a41b1be7a2',
+      message: "Your reservation for Electron Microscope XL-30 has been approved",
+      date: yesterday.toISOString(),
+      read: false,
+      type: "reservation_approved",
+      relatedId: "1001",
+      createdAt: yesterday.toISOString()
+    },
+    {
+      id: 'notif-2',
+      userId: token === 'test_token_123456789' ? '12345' : 'b2334c2f-1515-420f-9b27-c4a41b1be7a2',
+      message: "New equipment added: Thermal Cycler PCR-1000",
+      date: twoDaysAgo.toISOString(),
+      read: true,
+      type: "equipment_added",
+      relatedId: "105",
+      createdAt: twoDaysAgo.toISOString()
+    },
+    {
+      id: 'notif-3',
+      userId: token === 'test_token_123456789' ? '12345' : 'b2334c2f-1515-420f-9b27-c4a41b1be7a2',
+      message: "Your report for NMR Spectrometer usage is due tomorrow",
+      date: threeDaysAgo.toISOString(),
+      read: false,
+      type: "report_reminder",
+      relatedId: "report-7289",
+      createdAt: threeDaysAgo.toISOString()
+    },
+    {
+      id: 'notif-4',
+      userId: token === 'test_token_123456789' ? '12345' : 'b2334c2f-1515-420f-9b27-c4a41b1be7a2',
+      message: "Maintenance scheduled for Mass Spectrometer on May 15",
+      date: new Date(now.getTime() - 4 * 24 * 60 * 60 * 1000).toISOString(), // 4 дня назад
+      read: true,
+      type: "maintenance_notice",
+      relatedId: "maint-223",
+      createdAt: new Date(now.getTime() - 4 * 24 * 60 * 60 * 1000).toISOString()
+    }
+  ];
+  
+  return res.status(200).json(notifications);
 });
 
-// User activity
+// User activity - для дополнения информации на дашборде
 app.get('/user/activity', (req, res) => {
   logger.info('Processing user activity request');
-  return res.status(200).json([
-    { id: 1, type: 'Reservation', date: '2025-04-28', description: 'Reserved Electron Microscope' },
-    { id: 2, type: 'Data Upload', date: '2025-04-25', description: 'Uploaded research findings' },
-    { id: 3, type: 'Equipment Use', date: '2025-04-22', description: 'Used DNA Sequencer' }
-  ]);
+  
+  // Генерация реалистичных данных о последней активности пользователя
+  const now = new Date();
+  
+  const activities = [
+    { 
+      id: 'act-1',
+      type: 'Reservation',
+      date: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      description: 'Reserved Electron Microscope XL-30'
+    },
+    { 
+      id: 'act-2',
+      type: 'Data Upload',
+      date: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+      description: 'Uploaded research findings from experiment #3942'
+    },
+    { 
+      id: 'act-3',
+      type: 'Equipment Use',
+      date: new Date(now.getTime() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+      description: 'Used DNA Sequencer for 4 hours'
+    },
+    { 
+      id: 'act-4',
+      type: 'Report Submission',
+      date: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+      description: 'Submitted usage report for Mass Spectrometer'
+    },
+    { 
+      id: 'act-5',
+      type: 'Profile Update',
+      date: new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+      description: 'Updated research interests and profile information'
+    }
+  ];
+  
+  return res.status(200).json(activities);
 });
 
-// User favorites
+// User favorites - для дополнения информации на дашборде
 app.get('/user/favorites', (req, res) => {
   logger.info('Processing user favorites request');
-  return res.status(200).json([
-    { id: 101, name: 'Electron Microscope', facility: 'Imaging Center' },
-    { id: 102, name: 'Mass Spectrometer', facility: 'Chemical Analysis Lab' },
-    { id: 103, name: 'DNA Sequencer', facility: 'Genomics Department' }
-  ]);
+  
+  // Данные об избранном оборудовании пользователя
+  const favorites = [
+    { 
+      id: 101, 
+      name: 'Electron Microscope XL-30', 
+      facility: 'Imaging Center',
+      type: 'microscopy',
+      lastUsed: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
+    },
+    { 
+      id: 102, 
+      name: 'Mass Spectrometer 5800', 
+      facility: 'Chemical Analysis Lab',
+      type: 'spectroscopy',
+      lastUsed: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString()
+    },
+    { 
+      id: 103, 
+      name: 'DNA Sequencer', 
+      facility: 'Genomics Department',
+      type: 'sequencing',
+      lastUsed: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+    },
+    { 
+      id: 104, 
+      name: 'NMR Spectrometer', 
+      facility: 'Chemistry Department',
+      type: 'spectroscopy',
+      lastUsed: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString()
+    },
+    { 
+      id: 105, 
+      name: 'Thermal Cycler PCR-1000', 
+      facility: 'Molecular Biology Lab',
+      type: 'pcr',
+      lastUsed: null // Еще не использовалось
+    }
+  ];
+  
+  return res.status(200).json(favorites);
 });
 
 // Глобальное хранилище для мок-резерваций
@@ -710,7 +923,7 @@ app.get('/api/equipment', (req, res) => {
       location: 'North America',
       facility: 'Stanford Imaging Center',
       status: 'available',
-      imageUrl: 'https://source.unsplash.com/random/800x600/?microscope',
+      imageUrl: '/images/equipment1.jpg',
       specifications: 'Resolution: 1.5nm, Accelerating voltage: 0.2-30kV'
     },
     {
@@ -723,7 +936,7 @@ app.get('/api/equipment', (req, res) => {
       location: 'Europe',
       facility: 'Berlin Proteomics Lab',
       status: 'available',
-      imageUrl: 'https://source.unsplash.com/random/800x600/?spectrometer',
+      imageUrl: '/images/equipment2.jpg',
       specifications: 'Mass range: 50-6000 Da, Resolution: 25000 FWHM'
     },
     {
@@ -736,7 +949,7 @@ app.get('/api/equipment', (req, res) => {
       location: 'Asia',
       facility: 'Tokyo Genomics Center',
       status: 'available',
-      imageUrl: 'https://source.unsplash.com/random/800x600/?dna',
+      imageUrl: '/images/equipment3.jpg',
       specifications: 'Output: up to 6 TB of data per run, Read length: up to 2x150 bp'
     },
     {
@@ -749,7 +962,7 @@ app.get('/api/equipment', (req, res) => {
       location: 'North America',
       facility: 'MIT Chemistry Department',
       status: 'maintenance',
-      imageUrl: 'https://source.unsplash.com/random/800x600/?laboratory',
+      imageUrl: '/images/equipment4.jpg',
       specifications: 'Field strength: 11.7 T, Frequency: 500 MHz'
     },
     {
@@ -762,8 +975,8 @@ app.get('/api/equipment', (req, res) => {
       location: 'Europe',
       facility: 'Imperial College London',
       status: 'available',
-      imageUrl: 'https://source.unsplash.com/random/800x600/?microscope',
-      specifications: 'Resolution: 180nm XY, 500nm Z, 5 laser lines: 405, 488, 552, 638, 730nm'
+      imageUrl: '/images/equipment5.jpg',
+      specifications: 'Resolution: XY=180nm Z=500nm, Laser lines: 405nm, 488nm, 552nm, 638nm'
     },
     {
       id: 6,
@@ -775,8 +988,8 @@ app.get('/api/equipment', (req, res) => {
       location: 'Australia',
       facility: 'Australian National Computing Infrastructure',
       status: 'available',
-      imageUrl: 'https://source.unsplash.com/random/800x600/?server',
-      specifications: '2048 CPU cores, 8TB RAM, 1PB storage, 100Gb/s networking'
+      imageUrl: '/images/equipment1.jpg',
+      specifications: 'CPU cores: 2048, RAM: 8TB, Storage: 1PB, Network: 100Gb/s'
     }
   ];
   
@@ -844,11 +1057,86 @@ app.get('/api/equipment/:id', (req, res) => {
       location: 'North America',
       facility: 'Stanford Imaging Center',
       status: 'available',
-      imageUrl: 'https://source.unsplash.com/random/800x600/?microscope',
+      imageUrl: '/images/equipment1.jpg',
       specifications: 'Resolution: 1.5nm, Accelerating voltage: 0.2-30kV',
-      reservations: []
+      capabilities: 'Capable of imaging biological samples, conductive and non-conductive materials with high resolution.',
+      availabilityNotes: 'Available Monday to Friday, 9am to 5pm. Special requests for weekend usage can be made in advance.'
     },
-    // ... другое оборудование ...
+    {
+      id: 2,
+      name: 'Mass Spectrometer 5800',
+      description: 'MALDI TOF mass spectrometer for protein identification and biomarker discovery. High throughput and excellent sensitivity.',
+      manufacturer: 'Sciex',
+      model: '5800',
+      category: 'spectroscopy',
+      location: 'Europe',
+      facility: 'Berlin Proteomics Lab',
+      status: 'available',
+      imageUrl: '/images/equipment2.jpg',
+      specifications: 'Mass range: 50-6000 Da, Resolution: 25000 FWHM',
+      capabilities: 'Protein identification, biomarker discovery, high-throughput analysis of complex samples.',
+      availabilityNotes: 'Available by appointment only. Training required before first use.'
+    },
+    {
+      id: 3,
+      name: 'DNA Sequencer',
+      description: 'Next-generation sequencing system for whole genome sequencing and targeted gene panels. High throughput and accurate results.',
+      manufacturer: 'Illumina',
+      model: 'NovaSeq 6000',
+      category: 'genomics',
+      location: 'Asia',
+      facility: 'Tokyo Genomics Center',
+      status: 'available',
+      imageUrl: '/images/equipment3.jpg',
+      specifications: 'Output: up to 6 TB of data per run, Read length: up to 2x150 bp',
+      capabilities: 'Whole genome sequencing, exome sequencing, RNA-seq, ChIP-seq, and other high-throughput genomic applications.',
+      availabilityNotes: 'Requires sample preparation by lab technicians. Book at least 2 weeks in advance.'
+    },
+    {
+      id: 4,
+      name: 'NMR Spectrometer 500 MHz',
+      description: 'Nuclear magnetic resonance spectrometer for detailed structural analysis of organic compounds and biomolecules.',
+      manufacturer: 'Bruker',
+      model: 'Avance NEO 500',
+      category: 'spectroscopy',
+      location: 'North America',
+      facility: 'MIT Chemistry Department',
+      status: 'maintenance',
+      imageUrl: '/images/equipment4.jpg',
+      specifications: 'Field strength: 11.7 T, Frequency: 500 MHz',
+      capabilities: 'Structure elucidation of small molecules, proteins, and nucleic acids. Both solid-state and solution NMR capabilities.',
+      availabilityNotes: 'Currently undergoing maintenance until June 15, 2025. Please check back after this date.'
+    },
+    {
+      id: 5,
+      name: 'Confocal Microscope',
+      description: 'High-resolution optical imaging system with depth selectivity for 3D cellular imaging and live cell experiments.',
+      manufacturer: 'Leica',
+      model: 'SP8',
+      category: 'microscopy',
+      location: 'Europe',
+      facility: 'Imperial College London',
+      status: 'available',
+      imageUrl: '/images/equipment5.jpg',
+      specifications: 'Resolution: XY=180nm Z=500nm, Laser lines: 405nm, 488nm, 552nm, 638nm',
+      capabilities: 'Live cell imaging, FRET, FRAP, time-lapse imaging, 3D reconstruction, multi-channel fluorescence imaging.',
+      availabilityNotes: 'Training workshop held every first Monday of the month. Must attend before first use.'
+    },
+    {
+      id: 6,
+      name: 'High-Performance Computing Cluster',
+      description: 'Parallel computing system for intensive computational tasks like molecular dynamics simulations and genomic data analysis.',
+      manufacturer: 'Dell',
+      model: 'PowerEdge C6525',
+      category: 'computing',
+      location: 'Australia',
+      facility: 'Australian National Computing Infrastructure',
+      status: 'available',
+      imageUrl: '/images/equipment1.jpg',
+      specifications: 'CPU cores: 2048, RAM: 8TB, Storage: 1PB, Network: 100Gb/s',
+      capabilities: 'Molecular dynamics simulations, genomic data analysis, AI/ML model training, climate modeling, and other computationally intensive tasks.',
+      availabilityNotes: 'Job submission via web portal. Priority given to funded research projects.'
+    }
   ];
   
   const equipment = mockEquipment.find(item => item.id === id);

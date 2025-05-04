@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
   Button,
@@ -53,6 +53,7 @@ function TabPanel(props) {
 const EquipmentDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated } = useAuth();
 
   const [equipment, setEquipment] = useState(null);
@@ -60,6 +61,14 @@ const EquipmentDetailPage = () => {
   const [error, setError] = useState(null);
   const [tabValue, setTabValue] = useState(0);
   const [reservationDialogOpen, setReservationDialogOpen] = useState(false);
+
+  // Check URL for reserve parameter
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.get('reserve') === 'true' && isAuthenticated && equipment) {
+      setReservationDialogOpen(true);
+    }
+  }, [location.search, isAuthenticated, equipment]);
 
   // Fetch equipment details
   useEffect(() => {
@@ -144,7 +153,7 @@ const EquipmentDetailPage = () => {
         <Grid item xs={12} md={6}>
           <Box
             component="img"
-            src={equipment.imageUrl || 'https://source.unsplash.com/random/800x600/?laboratory'}
+            src={equipment.imageUrl || `/images/equipment${id % 5 + 1}.jpg`}
             alt={equipment.name}
             sx={{
               width: '100%',
@@ -239,17 +248,36 @@ const EquipmentDetailPage = () => {
             <TableContainer>
               <Table>
                 <TableBody>
-                  {equipment.specifications && Object.entries(equipment.specifications).map(([key, value]) => (
-                    <TableRow key={key}>
-                      <TableCell component="th" scope="row" sx={{ fontWeight: 'bold', width: '30%' }}>
-                        {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                      </TableCell>
-                      <TableCell>
-                        {typeof value === 'object' ? JSON.stringify(value) : value.toString()}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {(!equipment.specifications || Object.keys(equipment.specifications).length === 0) && (
+                  {equipment.specifications ? (
+                    typeof equipment.specifications === 'string' ? (
+                      // Если спецификации - это строка, разбиваем её на части
+                      equipment.specifications.split(',').map((spec, index) => {
+                        const [name, value] = spec.trim().split(':');
+                        return (
+                          <TableRow key={index}>
+                            <TableCell component="th" scope="row" sx={{ fontWeight: 'bold', width: '30%' }}>
+                              {name && name.trim()}
+                            </TableCell>
+                            <TableCell>
+                              {value && value.trim()}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    ) : (
+                      // Если спецификации - это объект, используем Object.entries
+                      Object.entries(equipment.specifications).map(([key, value]) => (
+                        <TableRow key={key}>
+                          <TableCell component="th" scope="row" sx={{ fontWeight: 'bold', width: '30%' }}>
+                            {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                          </TableCell>
+                          <TableCell>
+                            {typeof value === 'object' ? JSON.stringify(value) : value.toString()}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )
+                  ) : (
                     <TableRow>
                       <TableCell colSpan={2} align="center">
                         No specifications available

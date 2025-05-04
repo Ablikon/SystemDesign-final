@@ -66,7 +66,7 @@ const HomePage = () => {
             <Grid item xs={12} md={6}>
               <Box
                 component="img"
-                src="/static/images/hero-image.jpg"
+                src="/images/hero.jpg"
                 alt="Laboratory equipment"
                 sx={{
                   width: '100%',
@@ -214,7 +214,10 @@ const HomePage = () => {
                     >
                       View Details
                     </Button>
-                    <Button size="small" color="primary">
+                    <Button size="small" color="primary"
+                      component={RouterLink}
+                      to={`/equipment/${item.id}?reserve=true`}
+                    >
                       Book Now
                     </Button>
                   </CardActions>
@@ -247,21 +250,21 @@ const featuredEquipment = [
     name: 'Scanning Electron Microscope',
     description: 'High-resolution imaging for nanoscale samples with remote operation capabilities.',
     location: 'University of California, Berkeley',
-    image: 'https://source.unsplash.com/random/800x600/?microscope'
+    image: '/images/equipment1.jpg'
   },
   {
     id: '2',
     name: 'Liquid Chromatography Mass Spectrometer',
     description: 'Advanced analysis system for complex biological and chemical samples.',
     location: 'ETH Zurich',
-    image: 'https://source.unsplash.com/random/800x600/?laboratory'
+    image: '/images/equipment2.jpg'
   },
   {
     id: '3',
     name: 'Atomic Force Microscope',
     description: 'Nanoscale imaging and measurement with atomic resolution for material science.',
     location: 'Tokyo Institute of Technology',
-    image: 'https://source.unsplash.com/random/800x600/?science'
+    image: '/images/equipment3.jpg'
   }
 ];
 

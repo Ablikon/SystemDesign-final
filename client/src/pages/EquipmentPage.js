@@ -208,7 +208,7 @@ const EquipmentPage = () => {
                     <CardMedia
                       component="img"
                       height="200"
-                      image={item.imageUrl || 'https://source.unsplash.com/random/800x600/?lab'}
+                      image={item.imageUrl || `/images/equipment${item.id % 5 + 1}.jpg`}
                       alt={item.name}
                     />
                     <CardContent sx={{ flexGrow: 1 }}>
@@ -249,6 +249,8 @@ const EquipmentPage = () => {
                         size="small" 
                         color="primary"
                         disabled={item.status !== 'available'}
+                        component={RouterLink}
+                        to={`/equipment/${item.id}?reserve=true`}
                       >
                         Book Now
                       </Button>
