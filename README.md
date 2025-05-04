@@ -1,8 +1,8 @@
-# Open Science Collaboration Hub - Implementation
+# Open Science Collaboration Hub - System Design Project
 
 ## Implementation Scope
 
-For this initial implementation, we've focused on the core functionality that demonstrates the system's architecture and validates key design decisions:
+For this implementation, we've focused on the core functionality that demonstrates the system's architecture and validates key design decisions:
 
 1. **User Authentication Service**: User registration, login, and role management
 2. **Equipment Registry**: Equipment catalog with search functionality
@@ -39,12 +39,12 @@ This implementation follows a microservices architecture pattern as described in
 1. Clone this repository:
 ```
 git clone https://github.com/Ablikon/SystemDesign-final.git
-cd open-science-hub
+
 ```
 
 2. Install dependencies:
 ```
-npm install
+npm run install:all
 ```
 
 3. Start the development environment:
@@ -68,9 +68,15 @@ docker-compose up
 │   ├── reservation-service/  # Booking and approval workflows
 │   └── notification-service/ # Event-driven notification system
 ├── docker/                   # Docker configuration files
-├── docs/                     # Additional documentation
-└── scripts/                  # Utility scripts
+├── design_document_final.md  # Complete system design documentation
+└── docker-compose.yml        # Docker composition for services
 ```
+
+## Authentication & Authorization
+
+- The system requires authentication for creating reservations
+- JWT authentication is implemented via the Identity Service
+- Role-based access control restricts reservation approvals to laboratory managers
 
 ## Event-Driven Architecture
 
@@ -88,7 +94,6 @@ The system uses Kafka for asynchronous communication between services:
 
 3. **Consumers**:
    - Notification Service: Processes events to send notifications
-   - Analytics Service (future): Will process events for reporting
 
 ## Running Tests
 
@@ -96,24 +101,13 @@ The system uses Kafka for asynchronous communication between services:
 npm test
 ```
 
-## Development
+## Important Notes for Instructors
 
-To run individual services during development:
+This project demonstrates key system design principles:
+- Microservices architecture
+- Event-driven communication
+- API Gateway pattern
+- Authentication and authorization
+- Docker containerization
 
-```
-# Start the frontend
-cd client
-npm start
 
-# Start a specific backend service
-cd server/identity-service
-npm start
-```
-
-## API Documentation
-
-API documentation is available at http://localhost:8080/api/docs when the application is running.
-
-## License
-
-MIT # SystemDesign-final
