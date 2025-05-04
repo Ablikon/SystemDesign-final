@@ -22,8 +22,8 @@ const LoginPage = () => {
   const { login, isAuthenticated } = useAuth();
   
   const [formData, setFormData] = useState({
-    email: 'test@example.com',
-    password: 'password123'
+    email: '',
+    password: ''
   });
   
   const [error, setError] = useState('');
@@ -34,7 +34,6 @@ const LoginPage = () => {
   const [systemStatus, setSystemStatus] = useState(null);
   const [testResult, setTestResult] = useState(null);
 
-  // Clear timeout on unmount
   useEffect(() => {
     return () => {
       if (requestTimeout) {
@@ -106,7 +105,8 @@ const LoginPage = () => {
     }
   }, [isAuthenticated, navigate]);
 
-  // Функция для проверки соединения с API
+  // Функция для проверки соединения с API - commented out but preserved for future use
+  /*
   const checkConnection = async () => {
     try {
       setTestResult(null);
@@ -124,8 +124,10 @@ const LoginPage = () => {
       });
     }
   };
+  */
 
-  // Функция для проверки статуса всех сервисов
+  // Функция для проверки статуса всех сервисов - commented out but preserved for future use
+  /*
   const checkSystemStatus = async () => {
     try {
       setSystemStatus(null);
@@ -143,6 +145,7 @@ const LoginPage = () => {
       });
     }
   };
+  */
 
   return (
     <Container component="main" maxWidth="xs">
@@ -231,7 +234,7 @@ const LoginPage = () => {
             </Grid>
           </Box>
           
-          {/* Добавляем кнопки для тестирования */}
+          {/* Buttons for testing API - commented out but preserved for future use
           <Box sx={{ mt: 3, display: 'flex', justifyContent: 'space-between' }}>
             <Button
               variant="outlined"
@@ -249,15 +252,16 @@ const LoginPage = () => {
               Статус системы
             </Button>
           </Box>
+          */}
           
-          {/* Результаты проверки API */}
+          {/* Test result display - preserved but will not be shown as the functions are commented out */}
           {testResult && (
             <Alert severity={testResult.success ? "success" : "error"} sx={{ mt: 2 }}>
               {testResult.message}
             </Alert>
           )}
           
-          {/* Результаты проверки статуса системы */}
+          {/* System status display - preserved but will not be shown as the functions are commented out */}
           {systemStatus && (
             <Box sx={{ mt: 2 }}>
               <Alert severity={systemStatus.success ? "info" : "error"}>
@@ -285,6 +289,7 @@ const LoginPage = () => {
         </Box>
       </Paper>
       
+      {/* Helper text about test credentials - commented out
       <Box sx={{ mt: 2, textAlign: 'center' }}>
         <Typography variant="body2" color="text.secondary">
           For testing, you can use:
@@ -293,6 +298,7 @@ const LoginPage = () => {
           Email: test@example.com | Password: password123
         </Typography>
       </Box>
+      */}
     </Container>
   );
 };
