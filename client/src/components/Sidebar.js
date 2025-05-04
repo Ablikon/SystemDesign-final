@@ -20,17 +20,17 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 
-// Export the drawer width so it can be used consistently across the app
+
 export const DRAWER_WIDTH = 240;
-// Define header height for consistent spacing
-export const HEADER_HEIGHT = 64;
+
+export const HEADER_HEIGHT = 67;
 
 const Sidebar = ({ open, onClose }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { currentUser } = useAuth();
 
-  // Check if user has lab manager role
+
   const isLabManager = currentUser?.Roles?.some(role => role.name === 'Laboratory Manager');
 
   const menuItems = [
@@ -51,7 +51,6 @@ const Sidebar = ({ open, onClose }) => {
     }
   ];
 
-  // Add equipment management for lab managers
   if (isLabManager) {
     menuItems.push({
       text: 'Manage Equipment',
@@ -75,7 +74,7 @@ const Sidebar = ({ open, onClose }) => {
         color: 'white'
       }}>
         <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
-          Open Science Hub
+          Science Hub
         </Typography>
         <IconButton onClick={onClose} sx={{ color: 'white' }}>
           <ChevronLeftIcon />
@@ -131,16 +130,16 @@ const Sidebar = ({ open, onClose }) => {
       sx={{ 
         width: { md: DRAWER_WIDTH }, 
         flexShrink: { md: 0 },
-        height: '100%' 
+        zIndex: (theme) => theme.zIndex.drawer
       }}
     >
-      {/* Mobile drawer */}
+
       <Drawer
         variant="temporary"
         open={open}
         onClose={onClose}
         ModalProps={{
-          keepMounted: true, // Better open performance on mobile
+          keepMounted: true, 
         }}
         sx={{
           display: { xs: 'block', md: 'none' },
@@ -150,7 +149,6 @@ const Sidebar = ({ open, onClose }) => {
         {drawer}
       </Drawer>
       
-      {/* Desktop drawer */}
       <Drawer
         variant="permanent"
         sx={{

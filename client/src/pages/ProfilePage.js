@@ -207,7 +207,7 @@ export default function ProfilePage() {
                   </Box>
                 </Box>
                 <Box sx={{ display: 'flex', gap: 2 }}>
-                  <Button 
+                  {/* <Button 
                     startIcon={<SettingsBackupRestoreIcon />}
                     onClick={handleDirectTest}
                     variant="outlined"
@@ -215,7 +215,7 @@ export default function ProfilePage() {
                     disabled={isLoading}
                   >
                     Test API
-                  </Button>
+                  </Button> */}
                   <Button 
                     startIcon={isEditing ? <SaveIcon /> : <EditIcon />}
                     onClick={() => isEditing ? handleSubmit() : setIsEditing(true)}

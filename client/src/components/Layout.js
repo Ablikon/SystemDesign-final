@@ -19,7 +19,14 @@ const Layout = () => {
       <CssBaseline />
       <Header toggleSidebar={toggleSidebar} />
       
-      <Box sx={{ display: 'flex', flexGrow: 1 }}>
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          flexGrow: 1,
+          pt: `${HEADER_HEIGHT}px`,
+          backgroundColor: 'background.default',
+        }}
+      >
         {isAuthenticated && (
           <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         )}
@@ -28,21 +35,23 @@ const Layout = () => {
           component="main"
           sx={{
             flexGrow: 1,
+            width: { 
+              xs: '100%', 
+              md: isAuthenticated ? `calc(100% - ${DRAWER_WIDTH}px)` : '100%' 
+            },
             p: 3,
-            width: '100%',
-            backgroundColor: 'background.default',
-            mt: `${HEADER_HEIGHT}px`,
-            // Add left margin to main content when authenticated to prevent sidebar overlap
-            ...(isAuthenticated && {
-
-            })
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: `calc(100vh - ${HEADER_HEIGHT}px)`,
           }}
         >
-          <Outlet />
+          <Box sx={{ flexGrow: 1 }}>
+            <Outlet />
+          </Box>
+          
+          <Footer />
         </Box>
       </Box>
-      
-      <Footer />
     </Box>
   );
 };

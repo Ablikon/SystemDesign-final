@@ -16,8 +16,12 @@ const Footer = () => {
       sx={{
         py: 3,
         px: 2,
-        mt: 'auto',
-        backgroundColor: (theme) => theme.palette.grey[100]
+        mt: 4,
+        width: '100%',
+        backgroundColor: (theme) => theme.palette.grey[100],
+        borderTop: '1px solid',
+        borderColor: 'divider',
+        zIndex: 1
       }}
     >
       <Container maxWidth="lg">
