@@ -1,6 +1,4 @@
-/**
- * Simple logger utility for the equipment service
- */
+
 const logger = {
   info: (message, meta = {}) => {
     console.log(`[INFO] ${message}`, meta);

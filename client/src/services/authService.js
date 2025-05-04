@@ -49,7 +49,7 @@ const normalizeAuthResponse = (response) => {
     data: {}
   };
   
-  // Случай 1: Ответ имеет структуру { token, user }
+
   if (response && response.token && response.user) {
     normalizedResponse.data = {
       token: response.token,
@@ -58,7 +58,7 @@ const normalizeAuthResponse = (response) => {
     return normalizedResponse;
   }
   
-  // Случай 2: Ответ является объектом data без обертки success
+
   if (response && (response.data || response.token || response.user)) {
     normalizedResponse.data = {
       token: response.token || (response.data && response.data.token) || '',
@@ -67,7 +67,7 @@ const normalizeAuthResponse = (response) => {
     return normalizedResponse;
   }
   
-  // Если не удалось нормализовать, возвращаем исходный ответ
+ 
   console.error('Could not normalize response:', response);
   return {
     success: false,
@@ -76,10 +76,10 @@ const normalizeAuthResponse = (response) => {
   };
 };
 
-// Register user
+
 const register = async (userData) => {
   try {
-    // Подготавливаем только необходимые данные
+
     const essentialData = {
       email: userData.email,
       password: userData.password,
@@ -89,7 +89,7 @@ const register = async (userData) => {
     
     console.log('Sending register request to direct endpoint');
     
-    // Используем прямой эндпоинт вместо прокси
+
     const response = await api.post('/api/auth/register-direct', essentialData);
     console.log('Register response:', response);
     
@@ -107,7 +107,7 @@ const register = async (userData) => {
   }
 };
 
-// Get current user
+
 const getCurrentUser = async (token) => {
   try {
     if (!token) {
@@ -133,9 +133,8 @@ const getCurrentUser = async (token) => {
   }
 };
 
-// Update user profile
 const updateUser = async (userData, token) => {
-  const API_TIMEOUT = 8000; // 8 seconds timeout
+  const API_TIMEOUT = 8000; 
   let retryAttempt = 0;
   const MAX_RETRIES = 1;
   
@@ -148,11 +147,11 @@ const updateUser = async (userData, token) => {
       console.log('Updating user with token:', token ? 'Token exists' : 'No token');
       console.log('Update user data:', userData);
       
-      // Use AbortController for better timeout handling
+    
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
       
-      // Используем прямой эндпоинт вместо прокси
+
       const response = await api.put('/api/auth/users/profile-direct', userData, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -160,7 +159,7 @@ const updateUser = async (userData, token) => {
         signal: controller.signal
       });
       
-      // Clear the timeout as request completed
+
       clearTimeout(timeoutId);
       
       console.log('Update user response:', response);
@@ -169,7 +168,7 @@ const updateUser = async (userData, token) => {
         throw new Error(`Server responded with status: ${response.status}`);
       }
       
-      // Нормализуем ответ
+
       let userDataResponse = response.data;
       if (response.data && response.data.data) {
         userDataResponse = response.data.data;
@@ -179,12 +178,12 @@ const updateUser = async (userData, token) => {
     } catch (error) {
       console.error('Update user error:', error);
       
-      // Check if it's an abort error (timeout)
+
       if (error.name === 'AbortError' || error.code === 'ECONNABORTED') {
         if (retryAttempt < MAX_RETRIES) {
           console.log(`Request timed out, retrying (attempt ${retryAttempt + 1})...`);
           retryAttempt++;
-          return attemptUpdate(); // Retry
+          return attemptUpdate(); 
         }
         throw new Error('Profile update request timed out after retry. Please try again later.');
       }
@@ -196,7 +195,7 @@ const updateUser = async (userData, token) => {
   return attemptUpdate();
 };
 
-// Добавляем функцию для проверки статуса системы
+
 const checkSystemStatus = async () => {
   try {
     const response = await api.get('/api/system/status');
@@ -207,7 +206,7 @@ const checkSystemStatus = async () => {
   }
 };
 
-// Добавляем функцию для тестового подключения
+
 const testConnection = async () => {
   try {
     const response = await api.get('/api/test');
@@ -218,25 +217,24 @@ const testConnection = async () => {
   }
 };
 
-// Error handling helper
+
 const handleError = (error) => {
   if (error.response) {
-    // The request was made and the server responded with a status code
-    // that falls out of the range of 2xx
+
     console.error('Response error:', error.response.data);
     return {
       message: error.response.data.message || 'Authentication failed. Please try again.',
       status: error.response.status
     };
   } else if (error.request) {
-    // The request was made but no response was received
+  
     console.error('Request error - no response received');
     return {
       message: 'No response from server. Please check your internet connection.',
       status: 0
     };
   } else {
-    // Something happened in setting up the request that triggered an Error
+  
     console.error('Request setup error:', error.message);
     return {
       message: error.message || 'An unexpected error occurred',

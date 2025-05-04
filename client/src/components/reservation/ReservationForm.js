@@ -22,8 +22,8 @@ const ReservationForm = ({ equipmentId, equipmentName, onSuccess }) => {
   const { token, currentUser } = useAuth();
   
   const [formData, setFormData] = useState({
-    startTime: new Date(Date.now() + 60 * 60 * 1000), // Default: 1 hour from now
-    endTime: new Date(Date.now() + 3 * 60 * 60 * 1000), // Default: 3 hours from now
+    startTime: new Date(Date.now() + 60 * 60 * 1000), 
+    endTime: new Date(Date.now() + 3 * 60 * 60 * 1000), 
     purpose: '',
     notes: ''
   });
@@ -32,7 +32,7 @@ const ReservationForm = ({ equipmentId, equipmentName, onSuccess }) => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   
-  // Handle form input changes
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -41,7 +41,7 @@ const ReservationForm = ({ equipmentId, equipmentName, onSuccess }) => {
     }));
   };
   
-  // Handle date time picker changes
+
   const handleDateChange = (name, value) => {
     setFormData((prev) => ({
       ...prev,
@@ -49,7 +49,7 @@ const ReservationForm = ({ equipmentId, equipmentName, onSuccess }) => {
     }));
   };
   
-  // Form validation
+
   const validateForm = () => {
     if (!formData.startTime || !formData.endTime) {
       setError('Start and end times are required');
@@ -75,7 +75,7 @@ const ReservationForm = ({ equipmentId, equipmentName, onSuccess }) => {
     return true;
   };
   
-  // Handle form submission
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -104,12 +104,12 @@ const ReservationForm = ({ equipmentId, equipmentName, onSuccess }) => {
       setSuccess(true);
       setLoading(false);
       
-      // Call onSuccess callback if provided
+
       if (onSuccess) {
         onSuccess(response.data);
       }
       
-      // Navigate to reservations page after a delay
+
       setTimeout(() => {
         navigate('/reservations');
       }, 2000);
@@ -118,7 +118,7 @@ const ReservationForm = ({ equipmentId, equipmentName, onSuccess }) => {
       console.error('Error creating reservation:', error);
       setLoading(false);
       
-      // Provide a more specific error message
+
       let errorMessage = 'Failed to create reservation. Please try again.';
       if (error.message) {
         errorMessage = error.message;
@@ -130,7 +130,7 @@ const ReservationForm = ({ equipmentId, equipmentName, onSuccess }) => {
       
       setError(errorMessage);
       
-      // If token is invalid, redirect to login
+
       if (error.status === 401) {
         setTimeout(() => {
           navigate('/login', { state: { from: `/equipment/${equipmentId}` } });

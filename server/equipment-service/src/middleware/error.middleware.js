@@ -1,8 +1,5 @@
 const logger = require('../utils/logger');
 
-/**
- * Custom API Error class for meaningful error responses
- */
 class ApiError extends Error {
   constructor(statusCode, message) {
     super(message);
@@ -12,28 +9,21 @@ class ApiError extends Error {
   }
 }
 
-/**
- * Handle 404 errors for routes that don't exist
- */
 const notFound = (req, res, next) => {
   const error = new ApiError(404, `Route not found - ${req.originalUrl}`);
   next(error);
 };
 
-/**
- * Global error handler middleware
- */
+
 const errorHandler = (err, req, res, next) => {
-  // Default to 500 if no status code is set
+
   const statusCode = err.statusCode || 500;
   
-  // Log the error for server debugging
   console.error(`[ERROR] ${err.name}: ${err.message}`);
   if (statusCode === 500) {
     console.error(err.stack);
   }
   
-  // Send error response
   res.status(statusCode).json({
     success: false,
     message: err.message,

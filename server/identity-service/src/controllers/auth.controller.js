@@ -3,12 +3,10 @@ const bcrypt = require('bcryptjs');
 const { User, Role } = require('../models');
 const logger = require('../utils/logger');
 
-// Register a new user
 exports.register = async (req, res, next) => {
   try {
     const { email, password, firstName, lastName, institution, researchInterests } = req.body;
 
-    // Simple validation
     if (!email || !password || !firstName || !lastName) {
       return res.status(400).json({
         success: false,
@@ -16,7 +14,6 @@ exports.register = async (req, res, next) => {
       });
     }
 
-    // Check if user already exists
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
       return res.status(409).json({
@@ -25,25 +22,21 @@ exports.register = async (req, res, next) => {
       });
     }
 
-    // Create new user in database
     const newUser = await User.create({
       email,
-      password, // Will be hashed by the beforeCreate hook in the model
+      password, 
       firstName,
       lastName,
       institution: institution || '',
       researchInterests: researchInterests || []
     });
 
-    // Find the researcher role
     const researcherRole = await Role.findOne({ where: { name: 'researcher' } });
-    
-    // Assign researcher role to user
+
     if (researcherRole) {
       await newUser.addRole(researcherRole);
     }
 
-    // Generate token
     const token = jwt.sign(
       { id: newUser.id },
       process.env.JWT_SECRET || 'your-secret-key',
@@ -52,7 +45,6 @@ exports.register = async (req, res, next) => {
 
     logger.info(`New user registered: ${email}`);
 
-    // Return user data and token
     return res.status(201).json({
       success: true,
       data: {
@@ -70,15 +62,12 @@ exports.register = async (req, res, next) => {
   }
 };
 
-// Login user
 exports.login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    // Find user
     const user = await User.findOne({ where: { email } });
 
-    // Check if user exists
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -86,7 +75,6 @@ exports.login = async (req, res, next) => {
       });
     }
 
-    // Check password
     const isPasswordValid = await user.validPassword(password);
     if (!isPasswordValid) {
       return res.status(401).json({
@@ -95,7 +83,6 @@ exports.login = async (req, res, next) => {
       });
     }
 
-    // Generate token
     const token = jwt.sign(
       { id: user.id },
       process.env.JWT_SECRET || 'your-secret-key',
@@ -104,7 +91,6 @@ exports.login = async (req, res, next) => {
 
     logger.info(`User logged in: ${email}`);
 
-    // Return user data and token
     return res.status(200).json({
       success: true,
       data: {
@@ -122,10 +108,9 @@ exports.login = async (req, res, next) => {
   }
 };
 
-// Get current user profile
 exports.me = async (req, res, next) => {
   try {
-    // Find user by ID from token
+  
     const user = await User.findByPk(req.user.id, {
       include: [
         {

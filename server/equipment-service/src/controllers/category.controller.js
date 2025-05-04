@@ -1,4 +1,4 @@
-// Mock data for equipment categories
+
 const categories = [
   {
     id: '1',
@@ -32,9 +32,7 @@ const categories = [
   }
 ];
 
-/**
- * Get all equipment categories
- */
+
 exports.getAllCategories = (req, res) => {
   try {
     return res.status(200).json({
@@ -52,14 +50,11 @@ exports.getAllCategories = (req, res) => {
   }
 };
 
-/**
- * Get a category by ID
- */
 exports.getCategoryById = (req, res) => {
   try {
     const { id } = req.params;
     
-    // Find the category by ID
+
     const category = categories.find(c => c.id === id);
     
     if (!category) {
@@ -83,12 +78,10 @@ exports.getCategoryById = (req, res) => {
   }
 };
 
-/**
- * Create a new category (admin only)
- */
+
 exports.createCategory = (req, res) => {
   try {
-    // Check if the user has admin privileges
+
     if (req.user.role !== 'admin' && req.user.role !== 'lab_admin') {
       return res.status(403).json({
         success: false,
@@ -98,7 +91,6 @@ exports.createCategory = (req, res) => {
     
     const { name, description, imageUrl } = req.body;
     
-    // Validate required fields
     if (!name) {
       return res.status(400).json({
         success: false,
@@ -106,15 +98,14 @@ exports.createCategory = (req, res) => {
       });
     }
     
-    // Check if category name already exists
+
     if (categories.some(c => c.name.toLowerCase() === name.toLowerCase())) {
       return res.status(400).json({
         success: false,
         message: 'Category with this name already exists'
       });
     }
-    
-    // Create new category (in a real app, we would save to database)
+
     const newCategory = {
       id: (categories.length + 1).toString(),
       name,
@@ -122,7 +113,6 @@ exports.createCategory = (req, res) => {
       imageUrl: imageUrl || ''
     };
     
-    // Add to categories array (in a real app, we would save to database)
     categories.push(newCategory);
     
     return res.status(201).json({
@@ -140,14 +130,10 @@ exports.createCategory = (req, res) => {
   }
 };
 
-/**
- * Update a category (admin only)
- */
 exports.updateCategory = (req, res) => {
   try {
     const { id } = req.params;
     
-    // Check if the user has admin privileges
     if (req.user.role !== 'admin' && req.user.role !== 'lab_admin') {
       return res.status(403).json({
         success: false,
@@ -155,7 +141,7 @@ exports.updateCategory = (req, res) => {
       });
     }
     
-    // Find the category by ID
+
     const categoryIndex = categories.findIndex(c => c.id === id);
     
     if (categoryIndex === -1) {
@@ -167,7 +153,6 @@ exports.updateCategory = (req, res) => {
     
     const { name, description, imageUrl } = req.body;
     
-    // Check if the new category name already exists (excluding the current category)
     if (name && name !== categories[categoryIndex].name) {
       const nameExists = categories.some(
         (c, index) => index !== categoryIndex && c.name.toLowerCase() === name.toLowerCase()
@@ -181,15 +166,14 @@ exports.updateCategory = (req, res) => {
       }
     }
     
-    // Update category (in a real app, we would update in the database)
+ 
     const updatedCategory = {
       ...categories[categoryIndex],
       name: name || categories[categoryIndex].name,
       description: description !== undefined ? description : categories[categoryIndex].description,
       imageUrl: imageUrl !== undefined ? imageUrl : categories[categoryIndex].imageUrl
     };
-    
-    // Update in categories array (in a real app, we would update in the database)
+
     categories[categoryIndex] = updatedCategory;
     
     return res.status(200).json({
@@ -207,14 +191,10 @@ exports.updateCategory = (req, res) => {
   }
 };
 
-/**
- * Delete a category (admin only)
- */
 exports.deleteCategory = (req, res) => {
   try {
     const { id } = req.params;
     
-    // Check if the user has admin privileges
     if (req.user.role !== 'admin' && req.user.role !== 'lab_admin') {
       return res.status(403).json({
         success: false,
@@ -222,7 +202,7 @@ exports.deleteCategory = (req, res) => {
       });
     }
     
-    // Find the category by ID
+
     const categoryIndex = categories.findIndex(c => c.id === id);
     
     if (categoryIndex === -1) {
@@ -232,7 +212,6 @@ exports.deleteCategory = (req, res) => {
       });
     }
     
-    // Remove the category (in a real app, we would delete from database)
     const deletedCategory = categories.splice(categoryIndex, 1)[0];
     
     return res.status(200).json({

@@ -1,22 +1,19 @@
-// Mock roles data
+
 const roles = [
   { id: 1, name: 'Researcher', description: 'Regular researcher' },
   { id: 2, name: 'Lab Admin', description: 'Laboratory administrator' },
   { id: 3, name: 'System Admin', description: 'System administrator' }
 ];
 
-// Mock user-role assignments
+
 const userRoles = [
   { userId: 1, roleId: 1 },
   { userId: 2, roleId: 2 }
 ];
 
-/**
- * Get all available roles
- */
 exports.getAllRoles = (req, res) => {
   try {
-    // Check if the user has admin privileges
+
     if (req.user.role !== 'admin' && req.user.role !== 'lab_admin') {
       return res.status(403).json({
         success: false,
@@ -39,12 +36,10 @@ exports.getAllRoles = (req, res) => {
   }
 };
 
-/**
- * Create a new role (admin only)
- */
+
 exports.createRole = (req, res) => {
   try {
-    // Check if the user has admin privileges
+  
     if (req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
@@ -54,7 +49,7 @@ exports.createRole = (req, res) => {
     
     const { name, description } = req.body;
     
-    // Validate required fields
+
     if (!name) {
       return res.status(400).json({
         success: false,
@@ -62,7 +57,7 @@ exports.createRole = (req, res) => {
       });
     }
     
-    // Check if role already exists
+
     if (roles.some(r => r.name.toLowerCase() === name.toLowerCase())) {
       return res.status(400).json({
         success: false,
@@ -70,14 +65,14 @@ exports.createRole = (req, res) => {
       });
     }
     
-    // Create new role
+
     const newRole = {
       id: roles.length + 1,
       name,
       description: description || ''
     };
     
-    // Add to roles array (in a real app, save to database)
+  
     roles.push(newRole);
     
     return res.status(201).json({
@@ -95,12 +90,9 @@ exports.createRole = (req, res) => {
   }
 };
 
-/**
- * Assign a role to a user (admin only)
- */
 exports.assignRoleToUser = (req, res) => {
   try {
-    // Check if the user has admin privileges
+
     if (req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
@@ -110,7 +102,6 @@ exports.assignRoleToUser = (req, res) => {
     
     const { userId, roleId } = req.body;
     
-    // Validate required fields
     if (!userId || !roleId) {
       return res.status(400).json({
         success: false,
@@ -118,7 +109,7 @@ exports.assignRoleToUser = (req, res) => {
       });
     }
     
-    // Check if role exists
+
     const role = roles.find(r => r.id === roleId);
     if (!role) {
       return res.status(404).json({
@@ -127,7 +118,6 @@ exports.assignRoleToUser = (req, res) => {
       });
     }
     
-    // Check if assignment already exists
     if (userRoles.some(ur => ur.userId === userId && ur.roleId === roleId)) {
       return res.status(400).json({
         success: false,
@@ -135,7 +125,7 @@ exports.assignRoleToUser = (req, res) => {
       });
     }
     
-    // Add role assignment
+
     const assignment = { userId, roleId };
     userRoles.push(assignment);
     
@@ -154,12 +144,9 @@ exports.assignRoleToUser = (req, res) => {
   }
 };
 
-/**
- * Revoke a role from a user (admin only)
- */
 exports.revokeRoleFromUser = (req, res) => {
   try {
-    // Check if the user has admin privileges
+
     if (req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
@@ -169,7 +156,6 @@ exports.revokeRoleFromUser = (req, res) => {
     
     const { userId, roleId } = req.body;
     
-    // Validate required fields
     if (!userId || !roleId) {
       return res.status(400).json({
         success: false,
@@ -177,7 +163,6 @@ exports.revokeRoleFromUser = (req, res) => {
       });
     }
     
-    // Check if assignment exists
     const assignmentIndex = userRoles.findIndex(
       ur => ur.userId === userId && ur.roleId === roleId
     );
@@ -189,7 +174,6 @@ exports.revokeRoleFromUser = (req, res) => {
       });
     }
     
-    // Remove assignment
     const removedAssignment = userRoles.splice(assignmentIndex, 1)[0];
     
     return res.status(200).json({

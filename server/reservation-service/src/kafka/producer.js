@@ -1,15 +1,15 @@
 const { Kafka } = require('kafkajs');
 
-// Initialize Kafka client
+
 const kafka = new Kafka({
   clientId: 'reservation-service',
   brokers: [process.env.KAFKA_BROKER || 'kafka:9092']
 });
 
-// Create producer
+
 const producer = kafka.producer();
 
-// Connect producer on service startup
+ъ
 const connectProducer = async () => {
   try {
     await producer.connect();
@@ -21,7 +21,7 @@ const connectProducer = async () => {
   }
 };
 
-// Disconnect producer on service shutdown
+
 const disconnectProducer = async () => {
   try {
     await producer.disconnect();
@@ -33,15 +33,15 @@ const disconnectProducer = async () => {
   }
 };
 
-// Send message to Kafka topic
+
 const sendMessage = async (topic, message) => {
   try {
-    // Ensure producer is connected
+
     if (!producer.isConnected) {
       await connectProducer();
     }
 
-    // Send the message
+
     await producer.send({
       topic,
       messages: [
@@ -60,7 +60,7 @@ const sendMessage = async (topic, message) => {
   }
 };
 
-// Common event types for the reservation service
+
 const RESERVATION_EVENTS = {
   CREATED: 'reservation.created',
   APPROVED: 'reservation.approved',

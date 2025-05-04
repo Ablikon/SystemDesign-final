@@ -1,12 +1,10 @@
 const { User, Role } = require('../models');
 const logger = require('../utils/logger');
 
-/**
- * Get the current authenticated user
- */
+
 exports.getCurrentUser = async (req, res, next) => {
   try {
-    // Find user from database based on ID from JWT token
+
     const user = await User.findByPk(req.user.id, {
       include: [{
         model: Role,
@@ -35,14 +33,12 @@ exports.getCurrentUser = async (req, res, next) => {
   }
 };
 
-/**
- * Update the current user's profile
- */
+
 exports.updateProfile = async (req, res, next) => {
   try {
     const { firstName, lastName, institution, position, researchInterests, bio } = req.body;
     
-    // Find user from database
+
     let user = await User.findByPk(req.user.id);
     
     if (!user) {
@@ -52,7 +48,7 @@ exports.updateProfile = async (req, res, next) => {
       });
     }
     
-    // Update user fields
+
     await user.update({
       firstName: firstName || user.firstName,
       lastName: lastName || user.lastName,
@@ -62,7 +58,7 @@ exports.updateProfile = async (req, res, next) => {
       bio: bio || user.bio
     });
     
-    // Get updated user with roles
+
     user = await User.findByPk(req.user.id, {
       include: [{
         model: Role,
@@ -85,14 +81,11 @@ exports.updateProfile = async (req, res, next) => {
   }
 };
 
-/**
- * Get a user by ID (admin only)
- */
+
 exports.getUserById = async (req, res, next) => {
   try {
     const { id } = req.params;
     
-    // Check admin permissions
     const adminUser = await User.findByPk(req.user.id, {
       include: [{
         model: Role,
@@ -108,7 +101,7 @@ exports.getUserById = async (req, res, next) => {
       });
     }
     
-    // Find the user by ID
+
     const user = await User.findByPk(id, {
       include: [{
         model: Role,
@@ -137,12 +130,10 @@ exports.getUserById = async (req, res, next) => {
   }
 };
 
-/**
- * Get all users (admin only)
- */
+
 exports.getAllUsers = async (req, res, next) => {
   try {
-    // Check admin permissions
+
     const adminUser = await User.findByPk(req.user.id, {
       include: [{
         model: Role,
@@ -158,7 +149,6 @@ exports.getAllUsers = async (req, res, next) => {
       });
     }
     
-    // Get all users with their roles
     const users = await User.findAll({
       include: [{
         model: Role,
@@ -181,12 +171,9 @@ exports.getAllUsers = async (req, res, next) => {
   }
 };
 
-/**
- * Create a new user (admin only)
- */
 exports.createUser = async (req, res, next) => {
   try {
-    // Check admin permissions
+
     const adminUser = await User.findByPk(req.user.id, {
       include: [{
         model: Role,
@@ -204,7 +191,6 @@ exports.createUser = async (req, res, next) => {
     
     const { firstName, lastName, email, password, roleName, institution, position, researchInterests, bio } = req.body;
     
-    // Validate required fields
     if (!firstName || !lastName || !email || !password) {
       return res.status(400).json({
         success: false,
@@ -212,7 +198,6 @@ exports.createUser = async (req, res, next) => {
       });
     }
     
-    // Check if email already exists
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
       return res.status(400).json({
@@ -221,33 +206,32 @@ exports.createUser = async (req, res, next) => {
       });
     }
     
-    // Create new user
+
     const newUser = await User.create({
       firstName,
       lastName,
       email,
-      password, // Will be hashed by the model hook
+      password, 
       institution: institution || '',
       position: position || '',
       researchInterests: researchInterests || [],
       bio: bio || ''
     });
     
-    // Assign role if specified
     if (roleName) {
       const role = await Role.findOne({ where: { name: roleName } });
       if (role) {
         await newUser.addRole(role);
       }
     } else {
-      // Assign default researcher role
+ 
       const researcherRole = await Role.findOne({ where: { name: 'researcher' } });
       if (researcherRole) {
         await newUser.addRole(researcherRole);
       }
     }
     
-    // Get user with roles
+
     const createdUser = await User.findByPk(newUser.id, {
       include: [{
         model: Role,
@@ -270,14 +254,12 @@ exports.createUser = async (req, res, next) => {
   }
 };
 
-/**
- * Delete a user (admin only)
- */
+
 exports.deleteUser = async (req, res, next) => {
   try {
     const { id } = req.params;
     
-    // Check admin permissions
+
     const adminUser = await User.findByPk(req.user.id, {
       include: [{
         model: Role,
@@ -293,7 +275,7 @@ exports.deleteUser = async (req, res, next) => {
       });
     }
     
-    // Find the user by ID
+
     const user = await User.findByPk(id);
     
     if (!user) {
@@ -303,7 +285,7 @@ exports.deleteUser = async (req, res, next) => {
       });
     }
     
-    // Delete the user
+
     await user.destroy();
     
     return res.status(200).json({

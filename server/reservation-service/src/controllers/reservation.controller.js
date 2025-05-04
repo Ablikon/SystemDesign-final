@@ -5,10 +5,10 @@ const logger = require('../utils/logger');
 const moment = require('moment');
 const { Op } = require('sequelize');
 
-// Equipment service URL
+
 const EQUIPMENT_SERVICE_URL = process.env.EQUIPMENT_SERVICE_URL || 'http://localhost:3002';
 
-// Create a new reservation
+
 exports.createReservation = async (req, res, next) => {
   const transaction = await sequelize.transaction();
   
@@ -18,17 +18,17 @@ exports.createReservation = async (req, res, next) => {
     
     logger.info(`Creating reservation for user ${userId}, equipment ${equipmentId}`);
     
-    // Log request and userId
+
     logger.info(`Request body: ${JSON.stringify(req.body)}`);
     logger.info(`User ID from token: ${userId}`);
     
-    // Check if we should use fallback mock data
+
     if (sequelize.models.Reservation.sequelize.options.dialect === 'sqlite' || 
         require('../models').useFallback) {
       
       logger.info('Using fallback mock data for creating reservation');
       
-      // Create a mock reservation
+
       const mockReservation = require('../models').createMockReservation({
         userId,
         equipmentId,
@@ -48,14 +48,14 @@ exports.createReservation = async (req, res, next) => {
       });
     }
 
-    // Validate equipment exists and is available
+
     try {
       const equipmentResponse = await axios.get(`${EQUIPMENT_SERVICE_URL}/api/equipment/${equipmentId}`);
       const equipment = equipmentResponse.data.data;
       
       logger.info(`Equipment data: ${JSON.stringify(equipment)}`);
       
-      // Consider all equipment as available for now to avoid blocking reservations
+
       const status = equipment.status || 'available';
       
       if (status !== 'available') {
@@ -64,22 +64,21 @@ exports.createReservation = async (req, res, next) => {
     } catch (error) {
       logger.error('Failed to verify equipment:', error.message);
       
-      // Continue anyway - don't block reservation creation due to equipment service issues
       logger.info('Proceeding with reservation despite equipment verification failure');
     }
 
-    // Check for overlapping reservations
+
     try {
       const hasOverlap = await Reservation.checkOverlap(equipmentId, startTime, endTime);
       if (hasOverlap) {
         logger.warn(`Overlapping reservation detected for equipment ${equipmentId}`);
-        // Allow overlap for now but log it
+
       }
     } catch (overlapError) {
       logger.error('Error checking reservation overlap:', overlapError);
     }
 
-    // Create reservation
+
     const reservation = await Reservation.create({
       userId,
       equipmentId,
@@ -90,7 +89,7 @@ exports.createReservation = async (req, res, next) => {
       status: 'pending'
     }, { transaction });
     
-    // Create approval entry
+
     const approval = await Approval.create({
       reservationId: reservation.id,
       status: 'pending',
@@ -101,7 +100,7 @@ exports.createReservation = async (req, res, next) => {
       }]
     }, { transaction });
     
-    // Create usage record
+
     const usageRecord = await UsageRecord.create({
       reservationId: reservation.id,
       status: 'not_started'
@@ -123,15 +122,13 @@ exports.createReservation = async (req, res, next) => {
   } catch (error) {
     logger.error('Error creating reservation:', error);
     await transaction.rollback();
-    
-    // Try to use mock system as fallback
+
     try {
       logger.info('Falling back to mock system after database error');
       
       const { equipmentId, startTime, endTime, purpose, notes } = req.body;
       const userId = req.userId;
       
-      // Create a mock reservation
       const mockReservation = require('../models').createMockReservation({
         userId,
         equipmentId,
@@ -152,7 +149,7 @@ exports.createReservation = async (req, res, next) => {
     } catch (mockError) {
       logger.error('Even mock system failed:', mockError);
       
-      // Return a more specific error message
+  
       if (error.name === 'SequelizeValidationError') {
         return res.status(400).json({
           success: false,
@@ -166,7 +163,7 @@ exports.createReservation = async (req, res, next) => {
   }
 };
 
-// Get all reservations with optional filtering
+
 exports.getReservations = async (req, res, next) => {
   try {
     const { 
@@ -179,16 +176,16 @@ exports.getReservations = async (req, res, next) => {
       limit = 10
     } = req.query;
     
-    // Log the query parameters
+
     logger.info(`Get reservations request. userId: ${userId}, equipmentId: ${equipmentId}, status: ${status}`);
     
-    // Check if we should use fallback mock data
+
     if (sequelize.models.Reservation.sequelize.options.dialect === 'sqlite' || 
         require('../models').useFallback) {
       
       logger.info('Using fallback mock data for reservations');
       
-      // Get mock reservations
+
       const mockData = require('../models').getMockReservations({ userId, equipmentId, status });
       
       return res.status(200).json({
@@ -203,14 +200,13 @@ exports.getReservations = async (req, res, next) => {
         message: 'Using mock data - database unavailable'
       });
     }
-    
-    // Build query conditions
+
     const where = {};
     if (userId) where.userId = userId;
     if (equipmentId) where.equipmentId = equipmentId;
     if (status) where.status = status;
     
-    // Date range filter
+
     if (startDate || endDate) {
       where[Op.or] = [];
       
@@ -230,11 +226,11 @@ exports.getReservations = async (req, res, next) => {
     
     logger.info(`Query where clause: ${JSON.stringify(where)}`);
     
-    // Calculate pagination
+
     const offset = (page - 1) * limit;
     
     try {
-      // Execute query
+
       const { count, rows } = await Reservation.findAndCountAll({
         where,
         include: [
@@ -247,8 +243,7 @@ exports.getReservations = async (req, res, next) => {
       });
       
       logger.info(`Retrieved ${rows.length} reservations`);
-      
-      // Return empty array if no reservations found
+
       res.status(200).json({
         success: true,
         data: rows || [],
@@ -262,7 +257,7 @@ exports.getReservations = async (req, res, next) => {
     } catch (dbError) {
       logger.error('Database error while fetching reservations:', dbError);
       
-      // Try to use mock data as a last resort
+
       const mockData = require('../models').getMockReservations({ userId, equipmentId, status });
       
       res.status(200).json({
@@ -280,7 +275,7 @@ exports.getReservations = async (req, res, next) => {
   } catch (error) {
     logger.error('Error in getReservations:', error);
     
-    // Return mock data as a last resort
+
     const mockData = require('../models').getMockReservations();
     
     res.status(200).json({
@@ -297,7 +292,7 @@ exports.getReservations = async (req, res, next) => {
   }
 };
 
-// Get reservation by ID
+
 exports.getReservationById = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -322,7 +317,7 @@ exports.getReservationById = async (req, res, next) => {
   }
 };
 
-// Update reservation
+
 exports.updateReservation = async (req, res, next) => {
   const transaction = await sequelize.transaction();
   
@@ -331,24 +326,24 @@ exports.updateReservation = async (req, res, next) => {
     const { startTime, endTime, purpose, notes } = req.body;
     const userId = req.userId;
     
-    // Find reservation
+
     const reservation = await Reservation.findByPk(id);
     
     if (!reservation) {
       throw new ApiError(404, 'Reservation not found');
     }
     
-    // Check if user owns the reservation or is an admin
+
     if (reservation.userId !== userId) {
       throw new ApiError(403, 'Not authorized to update this reservation');
     }
     
-    // Only pending reservations can be updated
+
     if (reservation.status !== 'pending') {
       throw new ApiError(400, `Cannot update reservation with status: ${reservation.status}`);
     }
     
-    // Check for time change and overlaps
+
     if (startTime && endTime) {
       const hasOverlap = await Reservation.checkOverlap(
         reservation.equipmentId, 
@@ -362,7 +357,7 @@ exports.updateReservation = async (req, res, next) => {
       }
     }
     
-    // Update reservation
+
     await reservation.update({
       startTime: startTime || reservation.startTime,
       endTime: endTime || reservation.endTime,
@@ -370,13 +365,13 @@ exports.updateReservation = async (req, res, next) => {
       notes: notes || reservation.notes
     }, { transaction });
     
-    // Get related approval
+
     const approval = await Approval.findOne({ 
       where: { reservationId: id } 
     });
     
     if (approval) {
-      // Add history entry about update
+
       const history = approval.approvalHistory || [];
       history.push({
         status: 'pending',
@@ -386,13 +381,13 @@ exports.updateReservation = async (req, res, next) => {
       
       await approval.update({
         approvalHistory: history,
-        status: 'pending' // Reset to pending due to changes
+        status: 'pending' 
       }, { transaction });
     }
     
     await transaction.commit();
     
-    // Get updated reservation with associations
+
     const updatedReservation = await Reservation.findByPk(id, {
       include: [
         { model: Approval, as: 'approval' },
@@ -413,37 +408,36 @@ exports.updateReservation = async (req, res, next) => {
   }
 };
 
-// Cancel reservation
+
 exports.cancelReservation = async (req, res, next) => {
   const transaction = await sequelize.transaction();
   
   try {
     const { id } = req.params;
     const userId = req.userId;
-    
-    // Find reservation
+
     const reservation = await Reservation.findByPk(id);
     
     if (!reservation) {
       throw new ApiError(404, 'Reservation not found');
     }
     
-    // Check if user owns the reservation or is an admin
+    
     if (reservation.userId !== userId) {
       throw new ApiError(403, 'Not authorized to cancel this reservation');
     }
     
-    // Only pending or approved reservations can be canceled
+
     if (!['pending', 'approved'].includes(reservation.status)) {
       throw new ApiError(400, `Cannot cancel reservation with status: ${reservation.status}`);
     }
     
-    // Update reservation status
+
     await reservation.update({
       status: 'canceled'
     }, { transaction });
     
-    // Update usage record if exists
+  
     const usageRecord = await UsageRecord.findOne({
       where: { reservationId: id }
     });
@@ -469,7 +463,7 @@ exports.cancelReservation = async (req, res, next) => {
   }
 };
 
-// Handle reservation approval
+
 exports.approveReservation = async (req, res, next) => {
   const transaction = await sequelize.transaction();
   
@@ -478,12 +472,12 @@ exports.approveReservation = async (req, res, next) => {
     const { status, comments } = req.body;
     const approverId = req.userId;
     
-    // Status must be either approved or rejected
+
     if (!['approved', 'rejected'].includes(status)) {
       throw new ApiError(400, 'Status must be either approved or rejected');
     }
     
-    // Find reservation and approval
+
     const reservation = await Reservation.findByPk(id);
     
     if (!reservation) {
@@ -498,7 +492,7 @@ exports.approveReservation = async (req, res, next) => {
       throw new ApiError(404, 'Approval record not found');
     }
     
-    // Update approval
+
     await approval.update({
       status,
       approverId,
@@ -506,7 +500,7 @@ exports.approveReservation = async (req, res, next) => {
       approvalDate: new Date()
     }, { transaction });
     
-    // Update reservation status
+
     await reservation.update({
       status: status === 'approved' ? 'approved' : 'rejected'
     }, { transaction });

@@ -2,21 +2,21 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import jwt_decode from 'jwt-decode';
 import authService from '../services/authService';
 
-// Create authentication context
+
 const AuthContext = createContext(null);
 
-// AuthProvider component to wrap the application
+
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
 
-  // Check if token is valid and not expired
+
   const isValidToken = (token) => {
     if (!token) return false;
     
     try {
-      // For our mock tokens that don't have an expiration, just consider them valid
+     
       if (token.startsWith('mock_token_')) {
         console.log('Mock token detected, considering valid');
         return true;
@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Effect to load user data from token
+
   useEffect(() => {
     const initAuth = async () => {
       console.log('Initializing auth with token:', token);
@@ -46,7 +46,7 @@ export const AuthProvider = ({ children }) => {
           logout();
         }
       } else if (token) {
-        // If token exists but is invalid, remove it
+
         console.log('Token is invalid, logging out');
         logout();
       }
@@ -57,7 +57,7 @@ export const AuthProvider = ({ children }) => {
     initAuth();
   }, [token]);
 
-  // Login function
+
   const login = async (credentials) => {
     console.log('Attempting login with credentials:', credentials.email);
     try {
@@ -70,26 +70,24 @@ export const AuthProvider = ({ children }) => {
         throw new Error('Invalid response from server');
       }
       
-      // Handle the correct response structure
-      // The structure is { success: true, data: { user: {...}, token: '...' } }
+
       const responseData = response.data;
       
       if (!responseData || !responseData.token || !responseData.user) {
         console.error('Missing token or user in response data:', responseData);
         throw new Error('Invalid authentication data received');
       }
-      
-      // Store token in localStorage
+
       localStorage.setItem('token', responseData.token);
       localStorage.setItem('user', JSON.stringify(responseData.user));
       console.log('Token stored in localStorage');
       
-      // Update state
+
       setToken(responseData.token);
       setCurrentUser(responseData.user);
       console.log('User authenticated:', responseData.user.email);
       
-      return response; // Return the full response
+      return response; 
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -98,7 +96,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Register function
+
   const register = async (userData) => {
     console.log('Attempting registration with email:', userData.email);
     try {
@@ -111,8 +109,7 @@ export const AuthProvider = ({ children }) => {
         throw new Error(response?.message || 'Invalid response from server');
       }
       
-      // Handle the correct response structure
-      // The structure is { success: true, data: { user: {...}, token: '...' } }
+
       const responseData = response.data;
       
       if (!responseData || !responseData.token || !responseData.user) {
@@ -120,17 +117,17 @@ export const AuthProvider = ({ children }) => {
         throw new Error('Invalid authentication data received');
       }
       
-      // Store token in localStorage
+
       localStorage.setItem('token', responseData.token);
       localStorage.setItem('user', JSON.stringify(responseData.user));
       console.log('Token stored in localStorage');
       
-      // Update state
+
       setToken(responseData.token);
       setCurrentUser(responseData.user);
       console.log('User registered and authenticated:', responseData.user.email);
       
-      return response; // Return the full response
+      return response; 
     } catch (error) {
       console.error('Registration error:', error);
       throw error;
@@ -139,25 +136,24 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Logout function
   const logout = () => {
     console.log('Logging out');
-    // Remove token from localStorage
+
     localStorage.removeItem('token');
     
-    // Reset state
+
     setToken(null);
     setCurrentUser(null);
   };
 
-  // Update user profile
+
   const updateUserProfile = async (userData) => {
     console.log('Mock updating profile:', userData);
     try {
-      // Create a mock delay to simulate network request
+
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Create a mock updated user by merging the current user with the new data
+
       const updatedUser = {
         ...(currentUser || {}),
         ...userData,
@@ -166,10 +162,9 @@ export const AuthProvider = ({ children }) => {
       
       console.log('Mock profile updated:', updatedUser);
       
-      // Update the current user with the mock data
       setCurrentUser(updatedUser);
       
-      // Save updated user to localStorage
+
       if (updatedUser) {
         localStorage.setItem('user', JSON.stringify(updatedUser));
       }
@@ -181,7 +176,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Context value
+
   const value = {
     currentUser,
     token,
@@ -206,7 +201,6 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// Hook to use the auth context
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {

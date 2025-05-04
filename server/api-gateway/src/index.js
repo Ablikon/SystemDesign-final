@@ -10,25 +10,22 @@ const { setupProxies } = require('./config/proxy.config');
 const { errorHandler } = require('./middleware/error.middleware');
 const logger = require('./utils/logger');
 
-// Initialize Express app
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// Serve static files
 app.use('/images', express.static(path.join(__dirname, '../public/images')));
 
-// Service URLs
 const IDENTITY_SERVICE_URL = process.env.IDENTITY_SERVICE_URL || 'http://identity-service:3001';
 const EQUIPMENT_SERVICE_URL = process.env.EQUIPMENT_SERVICE_URL || 'http://equipment-service:3002';
 const RESERVATION_SERVICE_URL = process.env.RESERVATION_SERVICE_URL || 'http://reservation-service:3003';
 const NOTIFICATION_SERVICE_URL = process.env.NOTIFICATION_SERVICE_URL || 'http://notification-service:3004';
 
-// Security middleware
+
 app.use(helmet({
-  contentSecurityPolicy: false, // Disable CSP for development
+  contentSecurityPolicy: false, 
 }));
 
-// Настройка CORS для разрешения запросов с любого источника
+
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -36,26 +33,23 @@ app.use(cors({
   credentials: true
 }));
 
-// Rate limiting
+
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 500, // Increased from 100 to 500 requests per windowMs
+  windowMs: 15 * 60 * 1000, 
+  max: 500, 
   standardHeaders: true,
   legacyHeaders: false,
   message: 'Too many requests from this IP, please try again later'
 });
 app.use(limiter);
 
-// Parse JSON bodies
 app.use(express.json());
 
-// Logger middleware
 app.use((req, res, next) => {
   logger.info(`${req.method} ${req.url} from ${req.ip}`);
   next();
 });
 
-// Swagger setup
 const swaggerOptions = {
   definition: {
     openapi: '3.0.0',
@@ -82,7 +76,7 @@ const swaggerOptions = {
 const swaggerDocs = swaggerJsDoc(swaggerOptions);
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
-// Добавим тестовый эндпоинт для проверки соединения
+
 app.get('/api/test', (req, res) => {
   logger.info('Test endpoint called');
   return res.status(200).json({ 
@@ -91,15 +85,13 @@ app.get('/api/test', (req, res) => {
   });
 });
 
-// Dashboard statistics
+
 app.get('/dashboard/stats', (req, res) => {
   logger.info('Processing dashboard stats request');
 
-  // Получаем токен пользователя, если есть
   const authHeader = req.headers.authorization;
   const isAuthenticated = !!(authHeader && authHeader.startsWith('Bearer '));
   
-  // Если пользователь аутентифицирован, возвращаем персонализированную статистику
   if (isAuthenticated) {
     return res.status(200).json({
       upcomingReservations: 3,
@@ -111,7 +103,6 @@ app.get('/dashboard/stats', (req, res) => {
     });
   }
   
-  // Для неаутентифицированных пользователей вернем общую статистику
   return res.status(200).json({
     upcomingReservations: 0,
     pastReservations: 0,
@@ -119,16 +110,13 @@ app.get('/dashboard/stats', (req, res) => {
   });
 });
 
-// Recent reservations
 app.get('/reservations/recent', (req, res) => {
   logger.info('Processing recent reservations request');
   
-  // Получаем токен пользователя, если есть
   const authHeader = req.headers.authorization;
   const isAuthenticated = !!(authHeader && authHeader.startsWith('Bearer '));
   const token = isAuthenticated ? authHeader.split(' ')[1] : null;
   
-  // Текущая дата для генерации относительных дат
   const now = new Date();
   const yesterday = new Date(now);
   yesterday.setDate(yesterday.getDate() - 1);
@@ -136,7 +124,6 @@ app.get('/reservations/recent', (req, res) => {
   const nextMonth = new Date(now);
   nextMonth.setMonth(nextMonth.getMonth() + 1);
   
-  // Моковые данные для резерваций
   const reservations = [
     {
       id: '1001',
@@ -195,16 +182,16 @@ app.get('/reservations/recent', (req, res) => {
   return res.status(200).json(reservations);
 });
 
-// Notifications
+
 app.get('/notifications', (req, res) => {
   logger.info('Processing notifications request');
   
-  // Получаем токен пользователя, если есть
+
   const authHeader = req.headers.authorization;
   const isAuthenticated = !!(authHeader && authHeader.startsWith('Bearer '));
   const token = isAuthenticated ? authHeader.split(' ')[1] : null;
   
-  // Текущая дата для генерации относительных дат
+
   const now = new Date();
   const yesterday = new Date(now);
   yesterday.setDate(yesterday.getDate() - 1);
@@ -215,7 +202,6 @@ app.get('/notifications', (req, res) => {
   const threeDaysAgo = new Date(now);
   threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
   
-  // Моковые данные для уведомлений
   const notifications = [
     {
       id: 'notif-1',
@@ -251,7 +237,7 @@ app.get('/notifications', (req, res) => {
       id: 'notif-4',
       userId: token === 'test_token_123456789' ? '12345' : 'b2334c2f-1515-420f-9b27-c4a41b1be7a2',
       message: "Maintenance scheduled for Mass Spectrometer on May 15",
-      date: new Date(now.getTime() - 4 * 24 * 60 * 60 * 1000).toISOString(), // 4 дня назад
+      date: new Date(now.getTime() - 4 * 24 * 60 * 60 * 1000).toISOString(), 
       read: true,
       type: "maintenance_notice",
       relatedId: "maint-223",
@@ -262,11 +248,11 @@ app.get('/notifications', (req, res) => {
   return res.status(200).json(notifications);
 });
 
-// User activity - для дополнения информации на дашборде
+
 app.get('/user/activity', (req, res) => {
   logger.info('Processing user activity request');
   
-  // Генерация реалистичных данных о последней активности пользователя
+
   const now = new Date();
   
   const activities = [
@@ -305,11 +291,11 @@ app.get('/user/activity', (req, res) => {
   return res.status(200).json(activities);
 });
 
-// User favorites - для дополнения информации на дашборде
+
 app.get('/user/favorites', (req, res) => {
   logger.info('Processing user favorites request');
   
-  // Данные об избранном оборудовании пользователя
+
   const favorites = [
     { 
       id: 101, 
@@ -344,14 +330,14 @@ app.get('/user/favorites', (req, res) => {
       name: 'Thermal Cycler PCR-1000', 
       facility: 'Molecular Biology Lab',
       type: 'pcr',
-      lastUsed: null // Еще не использовалось
+      lastUsed: null 
     }
   ];
   
   return res.status(200).json(favorites);
 });
 
-// Глобальное хранилище для мок-резерваций
+
 const mockReservationsStore = [
   {
     id: '1',
@@ -359,7 +345,7 @@ const mockReservationsStore = [
     equipmentId: '1',
     startTime: '2025-05-10T10:00:00Z',
     endTime: '2025-05-11T10:00:00Z',
-    status: 'approved', // Все статусы approved по умолчанию
+    status: 'approved', 
     purpose: 'Research',
     notes: 'First test reservation',
     createdAt: '2023-05-01T12:00:00Z',
@@ -423,13 +409,13 @@ const mockReservationsStore = [
   }
 ];
 
-// Добавим прямой эндпоинт для получения резерваций
+
 app.get('/api/reservations-direct', (req, res) => {
   const { userId } = req.query;
   
   logger.info(`Direct reservations endpoint called for userId: ${userId}`);
   
-  // Фильтрация резерваций по userId, если он указан
+
   let userReservations = [...mockReservationsStore];
   if (userId) {
     userReservations = userReservations.filter(res => res.userId === userId);
@@ -448,7 +434,7 @@ app.get('/api/reservations-direct', (req, res) => {
   });
 });
 
-// Добавим прямой эндпоинт для создания резерваций
+
 app.post('/api/reservations-direct', (req, res) => {
   const { equipmentId, startTime, endTime, purpose, notes } = req.body;
   const authHeader = req.headers.authorization;
@@ -465,17 +451,15 @@ app.post('/api/reservations-direct', (req, res) => {
     }
   }
   
-  // Генерируем уникальный ID для резервации
   const reservationId = `res-${Date.now()}`;
   
-  // Создаем новую резервацию с имитированными данными
   const newReservation = {
     id: reservationId,
     userId,
     equipmentId,
     startTime,
     endTime,
-    status: 'approved', // Сразу ставим статус approved
+    status: 'approved', 
     purpose,
     notes,
     createdAt: new Date().toISOString(),
@@ -504,7 +488,7 @@ app.post('/api/reservations-direct', (req, res) => {
     }
   };
   
-  // Добавляем резервацию в хранилище
+
   mockReservationsStore.push(newReservation);
   
   logger.info(`Created new reservation with ID: ${reservationId}`);
@@ -517,13 +501,11 @@ app.post('/api/reservations-direct', (req, res) => {
   });
 });
 
-// Добавим прямой эндпоинт для начала использования резервации
 app.post('/api/reservations-direct/:id/start', (req, res) => {
   const { id } = req.params;
   
   logger.info(`Starting usage for reservation: ${id}`);
-  
-  // Находим резервацию в хранилище
+ 
   const reservationIndex = mockReservationsStore.findIndex(r => r.id === id);
   
   if (reservationIndex === -1) {
@@ -535,11 +517,10 @@ app.post('/api/reservations-direct/:id/start', (req, res) => {
   
   const reservation = mockReservationsStore[reservationIndex];
   
-  // Обновляем статус использования
+
   reservation.usageRecord.status = 'in_progress';
   reservation.usageRecord.actualStartTime = new Date().toISOString();
   
-  // Обновляем резервацию в хранилище
   mockReservationsStore[reservationIndex] = reservation;
   
   return res.status(200).json({
@@ -549,13 +530,12 @@ app.post('/api/reservations-direct/:id/start', (req, res) => {
   });
 });
 
-// Добавим прямой эндпоинт для отмены резервации
 app.delete('/api/reservations-direct/:id', (req, res) => {
   const { id } = req.params;
   
   logger.info(`Canceling reservation: ${id}`);
   
-  // Находим резервацию в хранилище
+
   const reservationIndex = mockReservationsStore.findIndex(r => r.id === id);
   
   if (reservationIndex === -1) {
@@ -565,13 +545,12 @@ app.delete('/api/reservations-direct/:id', (req, res) => {
     });
   }
   
-  // Обновляем статус резервации
+
   const reservation = mockReservationsStore[reservationIndex];
   reservation.status = 'canceled';
   reservation.usageRecord.status = 'canceled';
   reservation.updatedAt = new Date().toISOString();
   
-  // Обновляем резервацию в хранилище
   mockReservationsStore[reservationIndex] = reservation;
   
   return res.status(200).json({
@@ -580,13 +559,13 @@ app.delete('/api/reservations-direct/:id', (req, res) => {
   });
 });
 
-// Добавим прямой эндпоинт для завершения использования резервации
+
 app.post('/api/reservations-direct/:id/end', (req, res) => {
   const { id } = req.params;
   
   logger.info(`Ending usage for reservation: ${id}`);
   
-  // Находим резервацию в хранилище
+
   const reservationIndex = mockReservationsStore.findIndex(r => r.id === id);
   
   if (reservationIndex === -1) {
@@ -598,13 +577,13 @@ app.post('/api/reservations-direct/:id/end', (req, res) => {
   
   const reservation = mockReservationsStore[reservationIndex];
   
-  // Обновляем статус использования
+
   reservation.status = 'completed';
   reservation.usageRecord.status = 'completed';
   reservation.usageRecord.actualEndTime = new Date().toISOString();
   reservation.updatedAt = new Date().toISOString();
   
-  // Обновляем резервацию в хранилище
+
   mockReservationsStore[reservationIndex] = reservation;
   
   return res.status(200).json({
@@ -614,7 +593,7 @@ app.post('/api/reservations-direct/:id/end', (req, res) => {
   });
 });
 
-// Эндпоинт для проверки доступности всех сервисов
+
 app.get('/api/system/status', async (req, res) => {
   logger.info('Checking system status');
   
@@ -626,7 +605,7 @@ app.get('/api/system/status', async (req, res) => {
     notification: { status: 'Unknown', url: NOTIFICATION_SERVICE_URL }
   };
   
-  // Проверяем доступность каждого сервиса
+
   try {
     await axios.get(`${IDENTITY_SERVICE_URL}/health`);
     services.identity.status = 'UP';
@@ -665,7 +644,7 @@ app.get('/api/system/status', async (req, res) => {
   });
 });
 
-// Добавим прямой эндпоинт для регистрации в обход proxy middleware
+
 app.post('/api/auth/register-direct', async (req, res) => {
   try {
     logger.info('Direct registration endpoint called');
@@ -674,8 +653,7 @@ app.post('/api/auth/register-direct', async (req, res) => {
     if (!email || !password || !firstName || !lastName) {
       return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
-    
-    // Отправляем запрос напрямую в identity-service
+
     const response = await axios.post(`${IDENTITY_SERVICE_URL}/api/auth/register`, {
       email, password, firstName, lastName
     }, {
@@ -697,7 +675,6 @@ app.post('/api/auth/register-direct', async (req, res) => {
   }
 });
 
-// Добавим прямой эндпоинт для входа в обход proxy middleware
 app.post('/api/auth/login-direct', async (req, res) => {
   try {
     logger.info('Direct login endpoint called');
@@ -707,11 +684,10 @@ app.post('/api/auth/login-direct', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Missing email or password' });
     }
     
-    // Для тестовой учетной записи - разрешаем вход напрямую
+
     if (email === 'test@example.com' && password === 'password123') {
       logger.info('Using test account credentials');
-      
-      // Создаем токен и фиктивного пользователя для тестового аккаунта
+
       const testUser = {
         id: '12345',
         email: 'test@example.com',
@@ -731,7 +707,6 @@ app.post('/api/auth/login-direct', async (req, res) => {
       });
     }
     
-    // Отправляем запрос напрямую в identity-service
     try {
       const response = await axios.post(`${IDENTITY_SERVICE_URL}/api/auth/login`, {
         email, password
@@ -740,12 +715,9 @@ app.post('/api/auth/login-direct', async (req, res) => {
       });
       
       logger.info('Direct login response for', email, ':', response.status);
-      
-      // Получаем данные из ответа сервера
+
       const responseData = response.data;
       
-      // Гарантируем, что ответ имеет ожидаемую структуру
-      // Формат: { success: true, data: { user: {...}, token: '...' } }
       let formattedResponse = {
         success: true,
         data: {
@@ -754,23 +726,23 @@ app.post('/api/auth/login-direct', async (req, res) => {
         }
       };
       
-      // Проверяем различные варианты структуры ответа и нормализуем
+
       if (responseData.success === true && responseData.data && 
           responseData.data.token && responseData.data.user) {
-        // Уже в нужном формате
+
         formattedResponse = responseData;
       }
       else if (responseData.token && responseData.user) {
-        // Вариант: { token, user }
+
         formattedResponse.data.token = responseData.token;
         formattedResponse.data.user = responseData.user;
       }
       else if (responseData.data && responseData.data.token && responseData.data.user) {
-        // Вариант: { data: { token, user } } без success
+
         formattedResponse.data = responseData.data;
       }
       else {
-        // Поиск token и user в любой структуре
+
         formattedResponse.data.token = responseData.token || 
                                       (responseData.data && responseData.data.token) || 
                                       '';
@@ -805,7 +777,6 @@ app.post('/api/auth/login-direct', async (req, res) => {
   }
 });
 
-// Добавим прямой эндпоинт для обновления профиля пользователя
 app.put('/api/auth/users/profile-direct', async (req, res) => {
   try {
     logger.info('Direct profile update endpoint called');
@@ -819,11 +790,10 @@ app.put('/api/auth/users/profile-direct', async (req, res) => {
     
     const token = authHeader.split(' ')[1];
     
-    // Для тестового токена - разрешаем обновление напрямую
     if (token === 'test_token_123456789' || token.startsWith('mock_token_')) {
       logger.info('Using test account for profile update');
       
-      // Обновляем тестового пользователя
+
       const updatedUser = {
         id: '12345',
         email: 'test@example.com',
@@ -836,7 +806,6 @@ app.put('/api/auth/users/profile-direct', async (req, res) => {
         roles: ['researcher']
       };
       
-      // Добавим небольшую задержку для имитации сетевого запроса
       await new Promise(resolve => setTimeout(resolve, 500));
       
       return res.status(200).json({
@@ -845,12 +814,9 @@ app.put('/api/auth/users/profile-direct', async (req, res) => {
       });
     }
     
-    // Для профиля без реального identity-service, создадим имитацию
-    // В реальном приложении здесь будет запрос к identity-service
     try {
       logger.info(`Updating profile for user with token: ${token.substring(0, 10)}...`);
       
-      // Создаем имитацию запроса с таймаутом
       const updatedUser = {
         id: Math.random().toString(36).substring(2, 15),
         email: userData.email || 'user@example.com',
@@ -863,7 +829,6 @@ app.put('/api/auth/users/profile-direct', async (req, res) => {
         updatedAt: new Date().toISOString()
       };
       
-      // Добавим небольшую задержку для имитации сетевого запроса
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       logger.info('Profile updated successfully');
@@ -889,11 +854,9 @@ app.put('/api/auth/users/profile-direct', async (req, res) => {
   }
 });
 
-// Add a simple test endpoint for profile updates that always succeeds
 app.post('/api/test/profile-update', (req, res) => {
   logger.info('Test profile update endpoint called');
   
-  // Simulate a brief delay before responding
   setTimeout(() => {
     res.status(200).json({
       success: true,
@@ -907,11 +870,9 @@ app.post('/api/test/profile-update', (req, res) => {
   }, 500);
 });
 
-// Добавим тестовый эндпоинт для списка оборудования
 app.get('/api/equipment', (req, res) => {
   logger.info('Mock equipment endpoint called');
   
-  // Создаем фиктивный список оборудования для отображения
   const mockEquipment = [
     {
       id: 1,
@@ -993,7 +954,6 @@ app.get('/api/equipment', (req, res) => {
     }
   ];
   
-  // Применяем фильтры из запроса
   let filteredEquipment = [...mockEquipment];
   const { name, category, location, status } = req.query;
   
@@ -1021,7 +981,6 @@ app.get('/api/equipment', (req, res) => {
     );
   }
   
-  // Добавляем пагинацию
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 9;
   const startIndex = (page - 1) * limit;
@@ -1041,7 +1000,6 @@ app.get('/api/equipment', (req, res) => {
   });
 });
 
-// Добавим эндпоинт для деталей оборудования
 app.get('/api/equipment/:id', (req, res) => {
   logger.info(`Mock equipment details endpoint called for ID: ${req.params.id}`);
   
@@ -1154,18 +1112,15 @@ app.get('/api/equipment/:id', (req, res) => {
   });
 });
 
-// Setup API proxies to microservices
+
 setupProxies(app);
 
-// Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'UP', service: 'api-gateway' });
 });
 
-// Error handler
 app.use(errorHandler);
 
-// Start server
 app.listen(PORT, () => {
   logger.info(`API Gateway running on port ${PORT}`);
 }); 

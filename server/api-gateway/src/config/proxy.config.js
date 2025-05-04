@@ -1,12 +1,12 @@
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const logger = require('../utils/logger');
 
-// Service URLs
+
 const IDENTITY_SERVICE_URL = process.env.IDENTITY_SERVICE_URL || 'http://localhost:3001';
 const EQUIPMENT_SERVICE_URL = process.env.EQUIPMENT_SERVICE_URL || 'http://localhost:3002';
 const RESERVATION_SERVICE_URL = process.env.RESERVATION_SERVICE_URL || 'http://localhost:3003';
 
-// Proxy options
+
 const proxyOptions = {
   changeOrigin: true,
   pathRewrite: {
@@ -16,11 +16,10 @@ const proxyOptions = {
     '^/api/categories': '/api/categories',
     '^/api/reservations': '/api/reservations'
   },
-  logLevel: 'silent', // We'll handle logging
+  logLevel: 'silent', 
   onProxyReq: (proxyReq, req, res) => {
     logger.debug(`Proxying request to: ${proxyReq.path}`);
     
-    // Add additional debugging
     logger.debug(`Proxy headers: ${JSON.stringify(proxyReq.getHeaders())}`);
     if (req.body) {
       logger.debug(`Request body: ${JSON.stringify(req.body)}`);
@@ -33,11 +32,10 @@ const proxyOptions = {
       message: 'Service temporarily unavailable'
     });
   },
-  // Add timeout configuration
-  timeout: 30000 // 30 seconds timeout
+
+  timeout: 30000 
 };
 
-// Proxy routes configuration
 const proxyRoutes = [
   {
     context: ['/api/auth', '/api/users'],
@@ -56,7 +54,7 @@ const proxyRoutes = [
   }
 ];
 
-// Set up proxies on Express app
+
 const setupProxies = (app) => {
   proxyRoutes.forEach(route => {
     app.use(

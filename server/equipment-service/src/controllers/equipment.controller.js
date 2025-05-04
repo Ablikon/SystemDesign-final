@@ -3,7 +3,7 @@ const { ApiError } = require('../middleware/error.middleware');
 const logger = require('../utils/logger');
 const { Op } = require('sequelize');
 
-// Mock data for equipment
+
 const equipmentData = [
   {
     id: '1',
@@ -66,9 +66,6 @@ const equipmentData = [
   }
 ];
 
-/**
- * Get all equipment with optional filtering
- */
 exports.findAll = (req, res) => {
   try {
     const { 
@@ -80,7 +77,7 @@ exports.findAll = (req, res) => {
       limit = 10
     } = req.query;
 
-    // Filter equipment
+
     let filteredEquipment = [...equipmentData];
     
     if (name) {
@@ -107,7 +104,7 @@ exports.findAll = (req, res) => {
       );
     }
     
-    // Pagination
+
     const startIndex = (page - 1) * limit;
     const endIndex = page * limit;
     const paginatedEquipment = filteredEquipment.slice(startIndex, endIndex);
@@ -134,9 +131,7 @@ exports.findAll = (req, res) => {
   }
 };
 
-/**
- * Get equipment by ID
- */
+
 exports.findById = (req, res) => {
   try {
     const { id } = req.params;
@@ -166,9 +161,7 @@ exports.findById = (req, res) => {
   }
 };
 
-/**
- * Create new equipment
- */
+
 exports.create = (req, res) => {
   try {
     const { 
@@ -183,7 +176,6 @@ exports.create = (req, res) => {
       categories
     } = req.body;
     
-    // Validate required fields
     if (!name || !manufacturer || !model) {
       return res.status(400).json({
         success: false,
@@ -191,7 +183,6 @@ exports.create = (req, res) => {
       });
     }
     
-    // Create new equipment
     const newEquipment = {
       id: (equipmentData.length + 1).toString(),
       name,
@@ -207,7 +198,7 @@ exports.create = (req, res) => {
       owner: ''
     };
     
-    // Add to equipment data
+
     equipmentData.push(newEquipment);
     
     logger.info(`Created new equipment: ${name}`);
@@ -226,14 +217,11 @@ exports.create = (req, res) => {
   }
 };
 
-/**
- * Update equipment
- */
+
 exports.update = (req, res) => {
   try {
     const { id } = req.params;
     
-    // Find equipment by ID
     const equipmentIndex = equipmentData.findIndex(e => e.id === id);
     
     if (equipmentIndex === -1) {
@@ -257,7 +245,7 @@ exports.update = (req, res) => {
       owner
     } = req.body;
     
-    // Update equipment
+
     const updatedEquipment = {
       ...equipmentData[equipmentIndex],
       name: name || equipmentData[equipmentIndex].name,
@@ -273,7 +261,7 @@ exports.update = (req, res) => {
       owner: owner || equipmentData[equipmentIndex].owner
     };
     
-    // Update in data array
+
     equipmentData[equipmentIndex] = updatedEquipment;
     
     logger.info(`Updated equipment: ${updatedEquipment.name}`);
@@ -292,14 +280,12 @@ exports.update = (req, res) => {
   }
 };
 
-/**
- * Delete equipment
- */
+
 exports.delete = (req, res) => {
   try {
     const { id } = req.params;
     
-    // Find equipment by ID
+
     const equipmentIndex = equipmentData.findIndex(e => e.id === id);
     
     if (equipmentIndex === -1) {
@@ -309,7 +295,7 @@ exports.delete = (req, res) => {
       });
     }
     
-    // Remove equipment
+ 
     const deletedEquipment = equipmentData.splice(equipmentIndex, 1)[0];
     
     logger.info(`Deleted equipment: ${deletedEquipment.name}`);
