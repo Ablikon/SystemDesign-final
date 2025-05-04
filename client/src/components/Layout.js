@@ -34,7 +34,7 @@ const Layout = () => {
             mt: `${HEADER_HEIGHT}px`,
             // Add left margin to main content when authenticated to prevent sidebar overlap
             ...(isAuthenticated && {
-              ml: { xs: 0, md: `${DRAWER_WIDTH}px` }
+
             })
           }}
         >

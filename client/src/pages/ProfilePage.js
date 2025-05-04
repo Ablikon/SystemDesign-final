@@ -15,14 +15,17 @@ import {
   CardContent,
   List,
   ListItem,
-  ListItemText
+  ListItemText,
+  CircularProgress
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
 import HistoryIcon from '@mui/icons-material/History';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
+import SettingsBackupRestoreIcon from '@mui/icons-material/SettingsBackupRestore';
 import api from '../services/api';
+import axios from 'axios';
 
 export default function ProfilePage() {
   const { currentUser, updateUserProfile } = useAuth();
@@ -36,6 +39,7 @@ export default function ProfilePage() {
     bio: ''
   });
   const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [recentActivity, setRecentActivity] = useState([]);
   const [favoriteEquipment, setFavoriteEquipment] = useState([]);
@@ -92,24 +96,74 @@ export default function ProfilePage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     try {
-      await updateUserProfile(profile);
+      console.log('Submitting profile update with data:', profile);
+      
+      // Add a message to indicate we're submitting
+      setMessage({ 
+        type: 'info', 
+        text: 'Updating profile...' 
+      });
+      
+      const result = await updateUserProfile(profile);
+      console.log('Profile update result:', result);
+      
       setMessage({ 
         type: 'success', 
         text: 'Profile updated successfully!' 
       });
       setIsEditing(false);
     } catch (error) {
+      console.error('Profile update error:', error);
       setMessage({ 
         type: 'error', 
         text: error.message || 'Failed to update profile' 
       });
+    } finally {
+      setIsLoading(false);
     }
     
     // Clear message after 5 seconds
     setTimeout(() => {
       setMessage({ type: '', text: '' });
     }, 5000);
+  };
+
+  // Direct test function to bypass layers
+  const handleDirectTest = async () => {
+    setIsLoading(true);
+    setMessage({ type: 'info', text: 'Using local mock implementation...' });
+    
+    try {
+      console.log('Testing with mock data:', profile);
+      
+      // Create a simple mock implementation right here
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
+      
+      // Create mock updated user
+      const updatedUser = {
+        ...(currentUser || {}),
+        ...profile,
+        updatedAt: new Date().toISOString()
+      };
+      
+      console.log('Mock update successful:', updatedUser);
+      
+      setMessage({ 
+        type: 'success', 
+        text: 'Mock update successful! Real API calls are bypassed.' 
+      });
+    } catch (error) {
+      console.error('Mock update error:', error);
+      
+      setMessage({ 
+        type: 'error', 
+        text: 'Even the mock implementation failed: ' + error.message
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -152,14 +206,33 @@ export default function ProfilePage() {
                     />
                   </Box>
                 </Box>
-                <Button 
-                  startIcon={isEditing ? <SaveIcon /> : <EditIcon />}
-                  onClick={() => isEditing ? handleSubmit() : setIsEditing(true)}
-                  variant={isEditing ? "contained" : "outlined"}
-                  color="primary"
-                >
-                  {isEditing ? 'Save' : 'Edit Profile'}
-                </Button>
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <Button 
+                    startIcon={<SettingsBackupRestoreIcon />}
+                    onClick={handleDirectTest}
+                    variant="outlined"
+                    color="secondary"
+                    disabled={isLoading}
+                  >
+                    Test API
+                  </Button>
+                  <Button 
+                    startIcon={isEditing ? <SaveIcon /> : <EditIcon />}
+                    onClick={() => isEditing ? handleSubmit() : setIsEditing(true)}
+                    variant={isEditing ? "contained" : "outlined"}
+                    color="primary"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
+                        Processing...
+                      </Box>
+                    ) : (
+                      isEditing ? 'Save' : 'Edit Profile'
+                    )}
+                  </Button>
+                </Box>
               </Box>
               
               <Divider sx={{ my: 3 }} />

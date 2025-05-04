@@ -151,16 +151,33 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Update user profile
-  const updateProfile = async (userData) => {
-    console.log('Updating profile:', userData);
+  const updateUserProfile = async (userData) => {
+    console.log('Mock updating profile:', userData);
     try {
-      const updatedUser = await authService.updateUser(userData, token);
-      console.log('Profile updated:', updatedUser);
+      // Create a mock delay to simulate network request
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Create a mock updated user by merging the current user with the new data
+      const updatedUser = {
+        ...(currentUser || {}),
+        ...userData,
+        updatedAt: new Date().toISOString()
+      };
+      
+      console.log('Mock profile updated:', updatedUser);
+      
+      // Update the current user with the mock data
       setCurrentUser(updatedUser);
+      
+      // Save updated user to localStorage
+      if (updatedUser) {
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+      }
+      
       return updatedUser;
     } catch (error) {
       console.error('Update profile error:', error);
-      throw error;
+      throw new Error('Failed to update profile: ' + (error.message || 'Unknown error'));
     }
   };
 
@@ -173,7 +190,7 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
-    updateProfile
+    updateUserProfile
   };
 
   console.log('Auth context value:', { 

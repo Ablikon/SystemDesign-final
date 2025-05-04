@@ -1,23 +1,20 @@
 import axios from 'axios';
 
-// API_URL должен указывать на хост Docker-контейнера
 const API_URL = 'http://localhost:8080';
 
-// Create axios instance
 const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json'
   },
-  timeout: 30000 // увеличим таймаут до 30 секунд
+  timeout: 30000 
 });
 
-// Login user
 const login = async (credentials) => {
   try {
     console.log('Sending login request to direct endpoint');
     
-    // Используем прямой эндпоинт вместо прокси
+
     const response = await api.post('/api/auth/login-direct', credentials);
     console.log('Login response:', response);
     
@@ -25,7 +22,6 @@ const login = async (credentials) => {
       throw new Error(`Server responded with status: ${response.status}`);
     }
     
-    // Нормализуем ответ для обеспечения единообразия структуры
     const normalizedResponse = normalizeAuthResponse(response.data);
     console.log('Normalized response:', normalizedResponse);
     
@@ -39,16 +35,15 @@ const login = async (credentials) => {
   }
 };
 
-// Функция для нормализации ответа от сервера аутентификации
 const normalizeAuthResponse = (response) => {
-  // Проверяем, содержит ли ответ уже нормализованную структуру
+
   if (response && response.success === true && response.data && 
       response.data.token && response.data.user) {
     console.log('Response already normalized');
     return response;
   }
   
-  // Если ответ не содержит success или data, преобразуем его
+  
   let normalizedResponse = {
     success: true,
     data: {}
@@ -140,24 +135,65 @@ const getCurrentUser = async (token) => {
 
 // Update user profile
 const updateUser = async (userData, token) => {
-  try {
-    if (!token) {
-      throw new Error('No authentication token provided');
-    }
-    
-    console.log('Updating user with token:', token ? 'Token exists' : 'No token');
-    const response = await api.put('/api/auth/users/profile', userData, {
-      headers: {
-        'Authorization': `Bearer ${token}`
+  const API_TIMEOUT = 8000; // 8 seconds timeout
+  let retryAttempt = 0;
+  const MAX_RETRIES = 1;
+  
+  const attemptUpdate = async () => {
+    try {
+      if (!token) {
+        throw new Error('No authentication token provided');
       }
-    });
-    console.log('Update user response:', response);
-    
-    return response.data;
-  } catch (error) {
-    console.error('Update user error:', error);
-    throw handleError(error);
-  }
+      
+      console.log('Updating user with token:', token ? 'Token exists' : 'No token');
+      console.log('Update user data:', userData);
+      
+      // Use AbortController for better timeout handling
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
+      
+      // Используем прямой эндпоинт вместо прокси
+      const response = await api.put('/api/auth/users/profile-direct', userData, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        signal: controller.signal
+      });
+      
+      // Clear the timeout as request completed
+      clearTimeout(timeoutId);
+      
+      console.log('Update user response:', response);
+      
+      if (response.status !== 200) {
+        throw new Error(`Server responded with status: ${response.status}`);
+      }
+      
+      // Нормализуем ответ
+      let userDataResponse = response.data;
+      if (response.data && response.data.data) {
+        userDataResponse = response.data.data;
+      }
+      
+      return userDataResponse;
+    } catch (error) {
+      console.error('Update user error:', error);
+      
+      // Check if it's an abort error (timeout)
+      if (error.name === 'AbortError' || error.code === 'ECONNABORTED') {
+        if (retryAttempt < MAX_RETRIES) {
+          console.log(`Request timed out, retrying (attempt ${retryAttempt + 1})...`);
+          retryAttempt++;
+          return attemptUpdate(); // Retry
+        }
+        throw new Error('Profile update request timed out after retry. Please try again later.');
+      }
+      
+      throw handleError(error);
+    }
+  };
+  
+  return attemptUpdate();
 };
 
 // Добавляем функцию для проверки статуса системы
