@@ -188,15 +188,30 @@ const cancelReservation = async (id, token) => {
     
     console.log(`Canceling reservation ${id}`);
     
-    const response = await api.delete(`/${id}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    
-    console.log('Cancel reservation response:', response);
-    
-    return response.data;
+    // Try direct endpoint first
+    try {
+      console.log('Trying direct endpoint for canceling reservation');
+      const directResponse = await axios.delete(`${API_URL}/api/reservations-direct/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      console.log('Direct cancel response:', directResponse);
+      return directResponse.data;
+    } catch (directError) {
+      console.warn('Direct endpoint failed, falling back to standard endpoint:', directError.message);
+      
+      // Fall back to standard endpoint
+      const response = await api.delete(`/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      console.log('Cancel reservation response:', response);
+      return response.data;
+    }
   } catch (error) {
     console.error(`Error canceling reservation ${id}:`, error);
     throw handleError(error);
@@ -236,15 +251,30 @@ const startUsage = async (id, token) => {
     
     console.log(`Starting usage for reservation ${id}`);
     
-    const response = await api.post(`/${id}/start`, {}, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    
-    console.log('Start usage response:', response);
-    
-    return response.data;
+    // Try direct endpoint first
+    try {
+      console.log('Trying direct endpoint for starting usage');
+      const directResponse = await axios.post(`${API_URL}/api/reservations-direct/${id}/start`, {}, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      console.log('Direct start usage response:', directResponse);
+      return directResponse.data;
+    } catch (directError) {
+      console.warn('Direct endpoint failed, falling back to standard endpoint:', directError.message);
+      
+      // Fall back to standard endpoint
+      const response = await api.post(`/${id}/start`, {}, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      console.log('Start usage response:', response);
+      return response.data;
+    }
   } catch (error) {
     console.error(`Error starting usage for reservation ${id}:`, error);
     throw handleError(error);
@@ -260,15 +290,30 @@ const endUsage = async (id, usageData, token) => {
     
     console.log(`Ending usage for reservation ${id} with data:`, usageData);
     
-    const response = await api.post(`/${id}/end`, usageData, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    
-    console.log('End usage response:', response);
-    
-    return response.data;
+    // Try direct endpoint first
+    try {
+      console.log('Trying direct endpoint for ending usage');
+      const directResponse = await axios.post(`${API_URL}/api/reservations-direct/${id}/end`, usageData || {}, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      console.log('Direct end usage response:', directResponse);
+      return directResponse.data;
+    } catch (directError) {
+      console.warn('Direct endpoint failed, falling back to standard endpoint:', directError.message);
+      
+      // Fall back to standard endpoint
+      const response = await api.post(`/${id}/end`, usageData, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      console.log('End usage response:', response);
+      return response.data;
+    }
   } catch (error) {
     console.error(`Error ending usage for reservation ${id}:`, error);
     throw handleError(error);

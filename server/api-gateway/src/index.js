@@ -138,6 +138,269 @@ app.get('/user/favorites', (req, res) => {
   ]);
 });
 
+// Глобальное хранилище для мок-резерваций
+const mockReservationsStore = [
+  {
+    id: '1',
+    userId: 'b2334c2f-1515-420f-9b27-c4a41b1be7a2',
+    equipmentId: '1',
+    startTime: '2025-05-10T10:00:00Z',
+    endTime: '2025-05-11T10:00:00Z',
+    status: 'approved', // Все статусы approved по умолчанию
+    purpose: 'Research',
+    notes: 'First test reservation',
+    createdAt: '2023-05-01T12:00:00Z',
+    updatedAt: '2023-05-01T12:00:00Z',
+    approval: {
+      id: '101',
+      reservationId: '1',
+      status: 'approved',
+      approvalHistory: [
+        {
+          status: 'pending',
+          date: '2023-05-01T12:00:00Z',
+          comments: 'Waiting for approval'
+        },
+        {
+          status: 'approved',
+          date: '2023-05-02T12:00:00Z',
+          comments: 'Approved automatically'
+        }
+      ]
+    },
+    usageRecord: {
+      id: '201',
+      reservationId: '1',
+      status: 'not_started'
+    }
+  },
+  {
+    id: '2',
+    userId: 'b2334c2f-1515-420f-9b27-c4a41b1be7a2',
+    equipmentId: '2',
+    startTime: '2025-06-15T14:00:00Z',
+    endTime: '2025-06-16T14:00:00Z',
+    status: 'approved',
+    purpose: 'Analysis',
+    notes: 'Second test reservation',
+    createdAt: '2023-05-05T15:30:00Z',
+    updatedAt: '2023-05-06T10:00:00Z',
+    approval: {
+      id: '102',
+      reservationId: '2',
+      status: 'approved',
+      approvalHistory: [
+        {
+          status: 'pending',
+          date: '2023-05-05T15:30:00Z',
+          comments: 'Waiting for approval'
+        },
+        {
+          status: 'approved',
+          date: '2023-05-06T10:00:00Z',
+          comments: 'Approved automatically'
+        }
+      ]
+    },
+    usageRecord: {
+      id: '202',
+      reservationId: '2',
+      status: 'not_started'
+    }
+  }
+];
+
+// Добавим прямой эндпоинт для получения резерваций
+app.get('/api/reservations-direct', (req, res) => {
+  const { userId } = req.query;
+  
+  logger.info(`Direct reservations endpoint called for userId: ${userId}`);
+  
+  // Фильтрация резерваций по userId, если он указан
+  let userReservations = [...mockReservationsStore];
+  if (userId) {
+    userReservations = userReservations.filter(res => res.userId === userId);
+  }
+  
+  return res.status(200).json({
+    success: true,
+    data: userReservations,
+    pagination: {
+      total: userReservations.length,
+      page: 1,
+      limit: 10,
+      pages: 1
+    },
+    message: 'Mock reservations data'
+  });
+});
+
+// Добавим прямой эндпоинт для создания резерваций
+app.post('/api/reservations-direct', (req, res) => {
+  const { equipmentId, startTime, endTime, purpose, notes } = req.body;
+  const authHeader = req.headers.authorization;
+  
+  logger.info('Direct reservation creation endpoint called');
+  logger.info(`Request body: ${JSON.stringify(req.body)}`);
+  
+  // Извлекаем userId из токена или используем тестовый ID
+  let userId = 'b2334c2f-1515-420f-9b27-c4a41b1be7a2';
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.split(' ')[1];
+    if (token === 'test_token_123456789') {
+      userId = '12345';
+    }
+  }
+  
+  // Генерируем уникальный ID для резервации
+  const reservationId = `res-${Date.now()}`;
+  
+  // Создаем новую резервацию с имитированными данными
+  const newReservation = {
+    id: reservationId,
+    userId,
+    equipmentId,
+    startTime,
+    endTime,
+    status: 'approved', // Сразу ставим статус approved
+    purpose,
+    notes,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    approval: {
+      id: `app-${Date.now()}`,
+      reservationId: reservationId,
+      status: 'approved',
+      approvalHistory: [
+        {
+          status: 'pending',
+          date: new Date().toISOString(),
+          comments: 'Reservation created'
+        },
+        {
+          status: 'approved',
+          date: new Date().toISOString(),
+          comments: 'Approved automatically'
+        }
+      ]
+    },
+    usageRecord: {
+      id: `usage-${Date.now()}`,
+      reservationId: reservationId,
+      status: 'not_started'
+    }
+  };
+  
+  // Добавляем резервацию в хранилище
+  mockReservationsStore.push(newReservation);
+  
+  logger.info(`Created new reservation with ID: ${reservationId}`);
+  logger.info(`Total reservations in store: ${mockReservationsStore.length}`);
+  
+  return res.status(201).json({
+    success: true,
+    data: newReservation,
+    message: 'Reservation created successfully'
+  });
+});
+
+// Добавим прямой эндпоинт для начала использования резервации
+app.post('/api/reservations-direct/:id/start', (req, res) => {
+  const { id } = req.params;
+  
+  logger.info(`Starting usage for reservation: ${id}`);
+  
+  // Находим резервацию в хранилище
+  const reservationIndex = mockReservationsStore.findIndex(r => r.id === id);
+  
+  if (reservationIndex === -1) {
+    return res.status(404).json({
+      success: false,
+      message: 'Reservation not found'
+    });
+  }
+  
+  const reservation = mockReservationsStore[reservationIndex];
+  
+  // Обновляем статус использования
+  reservation.usageRecord.status = 'in_progress';
+  reservation.usageRecord.actualStartTime = new Date().toISOString();
+  
+  // Обновляем резервацию в хранилище
+  mockReservationsStore[reservationIndex] = reservation;
+  
+  return res.status(200).json({
+    success: true,
+    data: reservation,
+    message: 'Reservation usage started'
+  });
+});
+
+// Добавим прямой эндпоинт для отмены резервации
+app.delete('/api/reservations-direct/:id', (req, res) => {
+  const { id } = req.params;
+  
+  logger.info(`Canceling reservation: ${id}`);
+  
+  // Находим резервацию в хранилище
+  const reservationIndex = mockReservationsStore.findIndex(r => r.id === id);
+  
+  if (reservationIndex === -1) {
+    return res.status(404).json({
+      success: false,
+      message: 'Reservation not found'
+    });
+  }
+  
+  // Обновляем статус резервации
+  const reservation = mockReservationsStore[reservationIndex];
+  reservation.status = 'canceled';
+  reservation.usageRecord.status = 'canceled';
+  reservation.updatedAt = new Date().toISOString();
+  
+  // Обновляем резервацию в хранилище
+  mockReservationsStore[reservationIndex] = reservation;
+  
+  return res.status(200).json({
+    success: true,
+    message: 'Reservation canceled successfully'
+  });
+});
+
+// Добавим прямой эндпоинт для завершения использования резервации
+app.post('/api/reservations-direct/:id/end', (req, res) => {
+  const { id } = req.params;
+  
+  logger.info(`Ending usage for reservation: ${id}`);
+  
+  // Находим резервацию в хранилище
+  const reservationIndex = mockReservationsStore.findIndex(r => r.id === id);
+  
+  if (reservationIndex === -1) {
+    return res.status(404).json({
+      success: false,
+      message: 'Reservation not found'
+    });
+  }
+  
+  const reservation = mockReservationsStore[reservationIndex];
+  
+  // Обновляем статус использования
+  reservation.status = 'completed';
+  reservation.usageRecord.status = 'completed';
+  reservation.usageRecord.actualEndTime = new Date().toISOString();
+  reservation.updatedAt = new Date().toISOString();
+  
+  // Обновляем резервацию в хранилище
+  mockReservationsStore[reservationIndex] = reservation;
+  
+  return res.status(200).json({
+    success: true,
+    data: reservation,
+    message: 'Reservation usage completed'
+  });
+});
+
 // Эндпоинт для проверки доступности всех сервисов
 app.get('/api/system/status', async (req, res) => {
   logger.info('Checking system status');
@@ -327,147 +590,6 @@ app.post('/api/auth/login-direct', async (req, res) => {
       error: error.message
     });
   }
-});
-
-// Добавим прямой эндпоинт для получения резерваций
-app.get('/api/reservations-direct', (req, res) => {
-  const { userId } = req.query;
-  
-  logger.info(`Direct reservations endpoint called for userId: ${userId}`);
-  
-  // Создаем имитированные данные для резерваций
-  const mockReservations = [
-    {
-      id: '1',
-      userId: userId || 'b2334c2f-1515-420f-9b27-c4a41b1be7a2',
-      equipmentId: '1',
-      startTime: '2025-05-10T10:00:00Z',
-      endTime: '2025-05-11T10:00:00Z',
-      status: 'pending',
-      purpose: 'Research',
-      notes: 'First test reservation',
-      createdAt: '2023-05-01T12:00:00Z',
-      updatedAt: '2023-05-01T12:00:00Z',
-      approval: {
-        id: '101',
-        reservationId: '1',
-        status: 'pending',
-        approvalHistory: [
-          {
-            status: 'pending',
-            date: '2023-05-01T12:00:00Z',
-            comments: 'Waiting for approval'
-          }
-        ]
-      },
-      usageRecord: {
-        id: '201',
-        reservationId: '1',
-        status: 'not_started'
-      }
-    },
-    {
-      id: '2',
-      userId: userId || 'b2334c2f-1515-420f-9b27-c4a41b1be7a2',
-      equipmentId: '2',
-      startTime: '2025-06-15T14:00:00Z',
-      endTime: '2025-06-16T14:00:00Z',
-      status: 'approved',
-      purpose: 'Analysis',
-      notes: 'Second test reservation',
-      createdAt: '2023-05-05T15:30:00Z',
-      updatedAt: '2023-05-06T10:00:00Z',
-      approval: {
-        id: '102',
-        reservationId: '2',
-        status: 'approved',
-        approvalHistory: [
-          {
-            status: 'pending',
-            date: '2023-05-05T15:30:00Z',
-            comments: 'Waiting for approval'
-          },
-          {
-            status: 'approved',
-            date: '2023-05-06T10:00:00Z',
-            comments: 'Approved'
-          }
-        ]
-      },
-      usageRecord: {
-        id: '202',
-        reservationId: '2',
-        status: 'not_started'
-      }
-    }
-  ];
-  
-  return res.status(200).json({
-    success: true,
-    data: mockReservations,
-    pagination: {
-      total: mockReservations.length,
-      page: 1,
-      limit: 10,
-      pages: 1
-    },
-    message: 'Mock reservations data'
-  });
-});
-
-// Добавим прямой эндпоинт для создания резерваций
-app.post('/api/reservations-direct', (req, res) => {
-  const { equipmentId, startTime, endTime, purpose, notes } = req.body;
-  const authHeader = req.headers.authorization;
-  
-  logger.info('Direct reservation creation endpoint called');
-  logger.info(`Request body: ${JSON.stringify(req.body)}`);
-  
-  // Извлекаем userId из токена или используем тестовый ID
-  let userId = 'b2334c2f-1515-420f-9b27-c4a41b1be7a2';
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.split(' ')[1];
-    if (token === 'test_token_123456789') {
-      userId = '12345';
-    }
-  }
-  
-  // Создаем новую резервацию с имитированными данными
-  const newReservation = {
-    id: `res-${Date.now()}`,
-    userId,
-    equipmentId,
-    startTime,
-    endTime,
-    status: 'pending',
-    purpose,
-    notes,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    approval: {
-      id: `app-${Date.now()}`,
-      reservationId: `res-${Date.now()}`,
-      status: 'pending',
-      approvalHistory: [
-        {
-          status: 'pending',
-          date: new Date().toISOString(),
-          comments: 'Reservation created, awaiting approval'
-        }
-      ]
-    },
-    usageRecord: {
-      id: `usage-${Date.now()}`,
-      reservationId: `res-${Date.now()}`,
-      status: 'not_started'
-    }
-  };
-  
-  return res.status(201).json({
-    success: true,
-    data: newReservation,
-    message: 'Mock reservation created successfully'
-  });
 });
 
 // Setup API proxies to microservices
